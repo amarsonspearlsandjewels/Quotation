@@ -16,8 +16,8 @@ export default defineConfig({
       },
 
       manifest: {
-        name: 'apj',
-        short_name: 'apj',
+        name: 'APJ Quotation',
+        short_name: 'APJ Quotation',
         description: 'Jewllers Application',
         theme_color: '#000000',
         icons: [
