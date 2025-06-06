@@ -46,7 +46,7 @@ export default function EditItemPage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apjapi.vercel.app/getAllPrices')
+    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -441,13 +441,16 @@ export default function EditItemPage({
 
     try {
       setIsLoading(true);
-      const response = await fetch('https://apjapi.vercel.app/addeditedItem', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        'https://apj-quotation-backend.vercel.app/addeditedItem',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       const result = await response.json();
       setIsLoading(false);
@@ -512,13 +515,16 @@ export default function EditItemPage({
 
     try {
       setIsLoading(true);
-      const response = await fetch('https://apjapi.vercel.app/addDraft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        'https://apj-quotation-backend.vercel.app/addDraft',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       const result = await response.json();
       setIsLoading(false);

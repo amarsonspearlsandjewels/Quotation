@@ -18,7 +18,7 @@ export default function ProductDesc({
   const breakdown = item?.pricingBreakdown?.[`tier${priceIndex + 1}`];
 
   useEffect(() => {
-    fetch('https://apjapi.vercel.app/getAllPrices')
+    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -73,7 +73,7 @@ export default function ProductDesc({
     try {
       // Send GET request to delete the item
       const response = await fetch(
-        `https://apjapi.vercel.app/deleteItem/productId=${encodeURIComponent(
+        `https://apj-quotation-backend.vercel.app/deleteItem/productId=${encodeURIComponent(
           productId
         )}`
       );

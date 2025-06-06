@@ -61,11 +61,14 @@ export default function DraftPage({
       setIsLoading(true);
 
       // Add item
-      const response = await fetch('https://apjapi.vercel.app/addItem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finaldata),
-      });
+      const response = await fetch(
+        'https://apj-quotation-backend.vercel.app/addItem',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(finaldata),
+        }
+      );
 
       const result = await response.json();
 
@@ -79,7 +82,7 @@ export default function DraftPage({
       alert(`✅ ${result.message}`);
 
       // Delete draft
-      const draftDeleteUrl = `https://apjapi.vercel.app/deleteDraft/productId=${encodeURIComponent(
+      const draftDeleteUrl = `https://apj-quotation-backend.vercel.app/deleteDraft/productId=${encodeURIComponent(
         finaldata.productId
       )}`;
       const response3 = await fetch(draftDeleteUrl);
@@ -120,7 +123,7 @@ export default function DraftPage({
     try {
       // Send GET request to delete the item
       const response = await fetch(
-        `https://apjapi.vercel.app/deleteDraft/productId=${encodeURIComponent(
+        `https://apj-quotation-backend.vercel.app/deleteDraft/productId=${encodeURIComponent(
           productId
         )}`
       );

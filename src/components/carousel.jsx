@@ -8,7 +8,9 @@ export default function Carousel({ isLoading, setIsLoading }) {
     const fetchGoldRates = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('https://apjapi.vercel.app/getGoldRates');
+        const res = await fetch(
+          'https://apj-quotation-backend.vercel.app/getGoldRates'
+        );
         const data = await res.json();
         setGoldRates(data);
         setIsLoading(false);

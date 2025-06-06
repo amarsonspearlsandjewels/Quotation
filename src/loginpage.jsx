@@ -14,7 +14,7 @@ function Loginpage({ setIsLoggedIn, setUsername, setIsAdmin }) {
 
     try {
       const response = await fetch(
-        `https://apjapi.vercel.app/authenticate/username=${inputUsername}/password=${password}`
+        `https://apj-quotation-backend.vercel.app/authenticate/username=${inputUsername}/password=${password}`
       );
       const data = await response.json();
 

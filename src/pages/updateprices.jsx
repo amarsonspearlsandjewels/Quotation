@@ -20,7 +20,7 @@ export default function UpdatePrice({
 
   // useEffect(() => {
   //   setIsLoading(true);
-  //   fetch('https://apjapi.vercel.app/getAllPrices')
+  //   fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
   //     .then((res) => res.json())
   //     .then((data) => {
   //       if (data.success) {
@@ -70,7 +70,7 @@ export default function UpdatePrice({
   const handleSaveChanges = () => {
     setIsLoading(true);
     console.log('[Saving Changes] Final prices to send:', prices);
-    fetch('https://apjapi.vercel.app/updatePrices', {
+    fetch('https://apj-quotation-backend.vercel.app/updatePrices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ PRICES: prices }),

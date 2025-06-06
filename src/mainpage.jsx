@@ -46,7 +46,7 @@ export default function Mainpage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apjapi.vercel.app/getAllItems')
+    fetch('https://apj-quotation-backend.vercel.app/getAllItems')
       .then((res) => res.json())
       .then((dataa) => {
         if (dataa.success) {
@@ -62,7 +62,7 @@ export default function Mainpage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apjapi.vercel.app/getAllDrafts')
+    fetch('https://apj-quotation-backend.vercel.app/getAllDrafts')
       .then((res) => res.json())
       .then((dataa) => {
         if (dataa.success) {
@@ -80,7 +80,7 @@ export default function Mainpage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apjapi.vercel.app/getAllPrices')
+    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

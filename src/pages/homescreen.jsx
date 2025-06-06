@@ -52,7 +52,7 @@ export default function Homescreen({
     try {
       // Send GET request to delete the item
       const response = await fetch(
-        `https://apjapi.vercel.app/deleteItem/productId=${encodeURIComponent(
+        `https://apj-quotation-backend.vercel.app/deleteItem/productId=${encodeURIComponent(
           productId
         )}`
       );

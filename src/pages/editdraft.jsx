@@ -46,7 +46,7 @@ export default function EditDraftPage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apjapi.vercel.app/getAllPrices')
+    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -397,9 +397,6 @@ export default function EditDraftPage({
     return finaltotal.toFixed(1);
   }
 
-  let imagelink =
-    'https://5.imimg.com/data5/TG/DN/MY-37294786/designer-artificial-jewellery-500x500.jpg';
-
   async function handleSave() {
     // Frontend Validation
     if (
@@ -441,13 +438,16 @@ export default function EditDraftPage({
 
     try {
       setIsLoading(true);
-      const response = await fetch('https://apjapi.vercel.app/addeditedDraft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        'https://apj-quotation-backend.vercel.app/addeditedDraft',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       const result = await response.json();
       setIsLoading(false);
@@ -512,13 +512,16 @@ export default function EditDraftPage({
 
     try {
       setIsLoading(true);
-      const response = await fetch('https://apjapi.vercel.app/addeditedDraft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        'https://apj-quotation-backend.vercel.app/addeditedDraft',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      );
 
       const result = await response.json();
       setIsLoading(false);
