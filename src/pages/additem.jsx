@@ -5,17 +5,21 @@ export default function AddItemPage({
   setIsLoading,
   pricesData,
   setActiveTab,
+  itemsused,
 }) {
-  // const [pricesData, setPricesData] = useState([]);
+  // Static categories
+  const categories = ['GOLD', 'DIAMOND', 'POLKI','VICTORIAN'];
   const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState('');
-  const [grossWeight, setGrossWeight] = useState('');
+  const [grossWeight, setGrossWeight] = useState(''); // purity
   const [grossWeightAmount, setGrossWeightAmount] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
-  const [newItem, setNewItem] = useState('');
+  const [selectedItemName, setSelectedItemName] = useState('');
+  const [selectedItemUnit, setSelectedItemUnit] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
   const [total, setTotal] = useState(0);
   const [codeprefix, setCodePrefix] = useState('');
-  const [codeprefixlist, setcodeprefixlist] = useState([]);
   const [codeSuffix, setCodeSuffix] = useState('');
   const fileInputRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
@@ -24,13 +28,121 @@ export default function AddItemPage({
   const [uploading, setUploading] = useState(false);
   const [imageLinkText, setImageLinkText] = useState('');
   const [polkiType, setPolkiType] = useState(0); // default
-  // const [makingT, setMakingT] = useState(0);
 
-  const openFilePicker = () => {
-    fileInputRef.current.click();
+  // Subcategories (static)
+  const subcategories = [
+    'Necklace','Choker','Ring','Earring','Bracelet','Bangle','Vaddanam','Pendant','Champa','Nose Ring','Kada','Maang Tikka','Chain','Mangalsutra','Anklet'
+  ];
+
+  // Purity options from pricesData (docname: 'prices')
+  const purityOptions = (() => {
+    const pricesObj = pricesData.find((p) => p.docname === 'prices');
+    if (!pricesObj) return [];
+    return Object.keys(pricesObj).filter((k) => k.endsWith('k'));
+  })();
+
+  // Making charges from pricesData (docname: 'making')
+  const makingObj = pricesData.find((p) => p.docname === 'making') || {};
+  // Wastage from pricesData (docname: 'wastage')
+  const wastageObj = pricesData.find((p) => p.docname === 'wastage') || {};
+
+  // Product code prefix (static for each category)
+  const codep = {
+    DIAMOND: [ 'DNS', 'DC', 'DB', 'DBRL', 'DH', 'DJ', 'DL', 'DNP', 'DRL', 'DT', 'DVAD', 'DNAT', 'EDNS' ],
+    GOLD: [ 'GNS', 'GJ', 'GL', 'GT', 'GRL', 'GB', 'GBRL', 'GC', 'BC', 'CHAMP', 'CHO', 'GUT', 'JB', 'NARL', 'NATH', 'TIKA', 'VAD', 'MANGO', 'MS', 'TM', 'TMH' ],
+    POLKI: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS' ],
+    VICTORIAN: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS' ],
+  };
+  const [codeprefixlist, setcodeprefixlist] = useState([]);
+  useEffect(() => {
+    if (category === 'GOLD') setcodeprefixlist(codep.GOLD);
+    else if (category === 'DIAMOND') setcodeprefixlist(codep.DIAMOND);
+    else if (category === 'POLKI') setcodeprefixlist(codep.POLKI);
+    else if (category === 'VICTORIAN') setcodeprefixlist(codep.VICTORIAN);
+    else setcodeprefixlist([]);
+  }, [category]);
+  const finalProductCode = `${codeprefix}${codeSuffix}`;
+
+  // Items Used logic (unchanged)
+  const handleAddItemUsed = () => {
+    if (!selectedItemName || !quantity || !price) return;
+    setSelectedItems([
+      ...selectedItems,
+      {
+        name: selectedItemName,
+        unit: selectedItemUnit,
+        quantity: Number(quantity),
+        price: Number(price),
+      },
+    ]);
+    setSelectedItemName('');
+    setSelectedItemUnit('');
+    setQuantity('');
+    setPrice('');
+  };
+  const handleRemoveItemUsed = (index) => {
+    setSelectedItems(selectedItems.filter((_, i) => i !== index));
+  };
+  useEffect(() => {
+    const totalPrice = selectedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    setTotal(totalPrice);
+  }, [selectedItems]);
+
+  // Net weight calculation (unchanged)
+  const getNetWeight = () => {
+    if (!grossWeightAmount || isNaN(grossWeightAmount)) return '';
+    let totalStoneWeightGms = 0;
+    for (const item of selectedItems) {
+      const quantity = parseFloat(item.quantity);
+      const unit = (item.unit || 'ct').toLowerCase();
+      // If unit is gram/gms, use quantity directly as grams
+      // If unit is carat/ct, convert to grams (0.2g per carat)
+      const weightInGms = unit === 'gram' || unit === 'gms' ? quantity : quantity * 0.2;
+      totalStoneWeightGms += weightInGms;
+    }
+    return (grossWeightAmount - totalStoneWeightGms).toFixed(2);
+  };
+  const netWeight = getNetWeight();
+
+  // Wastage percent
+  const goldWastage = wastageObj.wastage || 0;
+
+  // Get gold rate for selected purity
+  const getGoldRate = (purity) => {
+    const pricesObj = pricesData.find((p) => p.docname === 'prices');
+    if (!pricesObj) return 0;
+    return pricesObj[purity] || 0;
   };
 
-  // 📷 Handle file input & show preview
+  // Making charges for each category
+  const getMakingCharges = () => {
+    if (category === 'GOLD') return makingObj['Gold Making'] || 0;
+    if (category === 'DIAMOND') return makingObj['Diamond Making'] || 0;
+    if (category === 'POLKI') return makingObj['Polki Making'] || 0;
+    if (category === 'VICTORIAN') return makingObj['Victorian Making'] || 0;
+    return 0;
+  };
+
+  // Calculation logic
+  const calcWastage = (percent, base) => (Number(percent) * Number(base)) / 100;
+
+  // Gold calculation
+  const goldRate = getGoldRate(grossWeight);
+  const goldAmt = Number(netWeight) && Number(goldRate) ? Number(netWeight) * Number(goldRate) : 0;
+  const wastageAmt = Number(goldWastage) && goldAmt ? calcWastage(goldWastage, goldAmt) : 0;
+  const makingAmt = Number(getMakingCharges()) && Number(netWeight) ? Number(getMakingCharges()) * Number(netWeight) : 0;
+  const itemsUsedAmt = selectedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+
+  // Subtotal: gold + wastage + making + items used
+  const subtotal = goldAmt + wastageAmt + makingAmt + itemsUsedAmt;
+  const gstAmt = calcWastage(3, subtotal);
+  const grandTotal = subtotal + gstAmt;
+
+  // Image upload logic (unchanged)
+  const openFilePicker = () => fileInputRef.current.click();
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -41,581 +153,196 @@ export default function AddItemPage({
     }
   };
 
-  // ⬆️ Upload to Cloudinary
-  const uploadToCloudinary = async () => {
-    if (!imageFile) {
-      alert('No image selected');
-      return;
-    }
-
-    setUploading(true);
-    setIsLoading(true);
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    formData.append('upload_preset', 'apjimagedatabase'); // 🔁 Replace with your preset name
-    formData.append('folder', 'apjimages'); // Optional
-
-    try {
-      const response = await fetch(
-        'https://api.cloudinary.com/v1_1/dmqvtwlv2/image/upload', // 🔁 Replace with your cloud name
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-      if (data.secure_url) {
-        setUploadedUrl(data.secure_url);
-        setImageLinkText(data.secure_url);
-        console.log('Image uploaded to:', data.secure_url);
-      } else {
-        console.error('Upload failed:', data);
-      }
-    } catch (error) {
-      console.error('Error uploading:', error);
-    } finally {
-      setUploading(false);
-      setIsLoading(false);
-    }
-  };
-
-  const subcategories = [
-    'Necklace',
-    'Ring',
-    'Earring',
-    'Bracelet',
-    'Bangle',
-    'Pendant',
-    'Anklet',
-    'Kada',
-    'Maang Tikka',
-    'Chain',
-  ];
-
-  const getAllMaterialOptions = () => {
-    const materials = [];
-    pricesData.forEach((cat) => {
-      Object.entries(cat).forEach(([key, value]) => {
-        if (key !== 'docname' && key !== 'MAKING' && key !== 'WASTAGE') {
-          materials.push({
-            label: key,
-            category: cat.docname,
-            price: Number(value[0]),
-          });
-        }
-      });
-    });
-    return materials;
-  };
-
-  const allOptions = getAllMaterialOptions();
-
-  const handleAddItem = () => {
-    if (!newItem) return;
-    const item = allOptions.find((opt) => opt.label === newItem);
-    if (!item) return;
-    setSelectedItems([...selectedItems, { ...item, quantity: 1 }]);
-    setNewItem('');
-  };
-
-  const updateQuantity = (index, qty) => {
-    const updated = [...selectedItems];
-    updated[index].quantity = Number(qty);
-    setSelectedItems(updated);
-  };
-
-  const deleteItem = (index) => {
-    const updated = [...selectedItems];
-    updated.splice(index, 1);
-    setSelectedItems(updated);
-  };
-
-  const getNetWeight = () => {
-    if (!grossWeightAmount || isNaN(grossWeightAmount)) return '';
-    const totalCtQty = selectedItems.reduce(
-      (sum, item) => sum + Number(item.quantity),
-      0
-    );
-    const deduction = totalCtQty * 0.2;
-    return (grossWeightAmount - deduction).toFixed(2);
-  };
-
-  const netWeight = getNetWeight();
-
-  function getWastage(n) {
-    let goldWastage =
-      pricesData.find((cat) => cat.docname === 'GOLD')?.WASTAGE?.[n] ?? '-';
-    return goldWastage;
-  }
-
-  let goldWastage = getWastage(0);
-  function getGoldRate(k, n) {
-    const goldRate =
-      pricesData.find((cat) => cat.docname === 'GOLD')?.[k]?.[n] ?? '-';
-    return goldRate;
-  }
-
-  function getMakingCharges(k, i, n) {
-    var goldRate = '';
-    if (i === 'POLKI') {
-      if (n == 0) {
-        goldRate =
-          pricesData.find((cat) => cat.docname === i)?.POLKIMC?.[k] ?? '-';
-      } else {
-        goldRate =
-          pricesData.find((cat) => cat.docname === i)?.VICTORIANMC?.[k] ?? '-';
-      }
-    } else {
-      goldRate =
-        pricesData.find((cat) => cat.docname === i)?.MAKING?.[k] ?? '-';
-    }
-    return goldRate;
-  }
-
-  function calcWastage(k, n) {
-    return (k * n) / 100;
-  }
-
-  useEffect(() => {
-    const totalPrice = selectedItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    setTotal(totalPrice);
-  }, [selectedItems]);
-
-  const codes = ['GNS', 'DNS', 'PNS'];
-  const codep = {
-    DIAMOND: [
-      'DNS',
-      'DC',
-      'DB',
-      'DBRL',
-      'DH',
-      'DJ',
-      'DL',
-      'DNP',
-      'DRL',
-      'DT',
-      'DVAD',
-      'DNAT',
-      'EDNS',
-    ],
-    GOLD: [
-      'GNS',
-      'GJ',
-      'GL',
-      'GT',
-      'GRL',
-      'GB',
-      'GBRL',
-      'GC',
-      'BC',
-      'CHAMP',
-      'CHO',
-      'GUT',
-      'JB',
-      'NARL',
-      'NATH',
-      'TIKA',
-      'VAD',
-      'MANGO',
-      'MS',
-      'TM',
-      'TMH',
-      'VNS',
-    ],
-    POLKI: ['PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT'],
-  };
-  const finalProductCode = `${codeprefix}${codeSuffix}`;
-
-  useEffect(() => {
-    if (category === 'GOLD') setcodeprefixlist(codep.GOLD);
-    else if (category === 'DIAMONDS') setcodeprefixlist(codep.DIAMOND);
-    else if (category === 'POLKI') setcodeprefixlist(codep.POLKI);
-  }, [category]);
-
-  function calculateSelectedTotal(i) {
-    let total = 0;
-
-    selectedItems.forEach((item) => {
-      const { label, category, quantity } = item;
-
-      // Find the matching category object in pricesData
-      const categoryData = pricesData.find((cat) => cat.docname === category);
-      if (!categoryData) {
-        console.warn(`Category "${category}" not found in pricesData.`);
-        return;
-      }
-
-      // Get the price array for the given label
-      const priceArray = categoryData[label];
-      if (!priceArray || !Array.isArray(priceArray)) {
-        console.warn(`Item "${label}" not found in category "${category}".`);
-        return;
-      }
-
-      // Convert the price at index i to a number
-      const price = Number(priceArray[i]);
-      if (isNaN(price)) {
-        console.warn(
-          `Price for "${label}" at index ${i} is not a valid number.`
-        );
-        return;
-      }
-
-      // Calculate total for this item
-      const itemTotal = price * quantity;
-      total += itemTotal;
-    });
-
-    return total;
-  }
-
-  const tier1price = calculateSelectedTotal(0);
-  const tier2price = calculateSelectedTotal(1);
-  const tier3price = calculateSelectedTotal(2);
-
-  function calculateFirstPrice(goldpurity, gst) {
-    console.log(selectedItems);
-    console.log(pricesData);
-    const goldamount = netWeight * getGoldRate(goldpurity, 0);
-    console.log(goldamount);
-    const wastagepercent = getWastage(0);
-    let wasteandgold = goldamount + (wastagepercent / 100) * goldamount;
-    console.log(wasteandgold);
-    let makingcharges = 0;
-    if (category === 'POLKI') {
-      if (polkiType === 0) {
-        makingcharges = getMakingCharges(0, category, 0);
-      } else {
-        makingcharges = getMakingCharges(0, category, 1);
-      }
-    } else {
-      makingcharges = getMakingCharges(0, category, 0);
-    }
-    let totalmaking = makingcharges * netWeight;
-    console.log(totalmaking);
-    console.log(wasteandgold + totalmaking);
-    let totalbeforetax = wasteandgold + totalmaking + tier1price;
-    let gstamt = (gst / 100) * totalbeforetax;
-    console.log(gstamt);
-    let finaltotal = gstamt + totalbeforetax;
-    console.log(finaltotal.toFixed(1) + '- Final Total');
-    // console.log(totalbeforetax + gstamt);
-    return finaltotal.toFixed(1);
-  }
-
-  function calculateSecondPrice(goldpurity, gst) {
-    console.log(selectedItems);
-    console.log(pricesData);
-    const goldamount = netWeight * getGoldRate(goldpurity, 1);
-    console.log(goldamount);
-    const wastagepercent = getWastage(1);
-    let wasteandgold = goldamount + (wastagepercent / 100) * goldamount;
-    console.log(wasteandgold);
-    let makingcharges = 0;
-    if (category === 'POLKI') {
-      if (polkiType === 0) {
-        makingcharges = getMakingCharges(1, category, 0);
-      } else {
-        makingcharges = getMakingCharges(1, category, 1);
-      }
-    } else {
-      makingcharges = getMakingCharges(1, category, 0);
-    }
-    let totalmaking = makingcharges * netWeight;
-    console.log(totalmaking);
-    console.log(wasteandgold + totalmaking);
-    let totalbeforetax = wasteandgold + totalmaking + tier2price;
-    let gstamt = (gst / 100) * totalbeforetax;
-    console.log(gstamt);
-    const finaltotal = gstamt + totalbeforetax;
-    console.log(finaltotal.toFixed(1));
-    // console.log(totalbeforetax + gstamt);
-    return finaltotal.toFixed(1);
-  }
-
-  function calculateThirdPrice(goldpurity, gst) {
-    console.log(selectedItems);
-    console.log(pricesData);
-    const goldamount = netWeight * getGoldRate(goldpurity, 2);
-    console.log(goldamount);
-    const wastagepercent = getWastage(2);
-    let wasteandgold = goldamount + (wastagepercent / 100) * goldamount;
-    console.log(wasteandgold);
-    let makingcharges = 0;
-    if (category === 'POLKI') {
-      if (polkiType === 0) {
-        makingcharges = getMakingCharges(2, category, 0);
-      } else {
-        makingcharges = getMakingCharges(2, category, 1);
-      }
-    } else {
-      makingcharges = getMakingCharges(2, category, 0);
-    }
-
-    let totalmaking = makingcharges * netWeight;
-    console.log(totalmaking);
-    console.log(wasteandgold + totalmaking);
-    let totalbeforetax = wasteandgold + totalmaking + tier3price;
-    let gstamt = (gst / 100) * totalbeforetax;
-    console.log(gstamt);
-    const finaltotal = gstamt + totalbeforetax;
-    console.log(finaltotal.toFixed(1));
-    // console.log(totalbeforetax + gstamt);
-    return finaltotal.toFixed(1);
-  }
-
-  // useEffect(() => {
-  //   if (category === 'POLKI') {
-  //     setMakingT(polkiType == 1 ? 1 : 0);
-  //   } else {
-  //     setMakingT(0);
-  //   }
-  // }, [category, polkiType]);
-
+  // Save handler (unchanged except for new data structure)
   async function handleSave() {
-    // Frontend Validation
-    if (
-      !category ||
-      !subcategory ||
-      !grossWeight ||
-      !netWeight ||
-      !grossWeightAmount ||
-      // !imageLinkText ||
-      !finalProductCode ||
-      selectedItems.length === 0
-    ) {
-      alert(
-        'All fields must be filled and at least one item must be selected.'
-      );
+    if (!category || !subcategory || !grossWeight || !netWeight || !grossWeightAmount || !finalProductCode || selectedItems.length === 0) {
+      alert('All fields must be filled and at least one item must be selected.');
       return;
     }
-
     setIsLoading(true);
-
-    // 🔄 Step 1: Upload image to Cloudinary
     let imageUrl = '';
     const formData = new FormData();
     formData.append('file', imageFile);
-    formData.append('upload_preset', 'apjimagedatabase'); // your preset
-    formData.append('folder', 'apjimages'); // optional
-
+    formData.append('upload_preset', 'apjimagedatabase');
+    formData.append('folder', 'apjimages');
     try {
-      const uploadResponse = await fetch(
-        'https://api.cloudinary.com/v1_1/dmqvtwlv2/image/upload',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
+      const uploadResponse = await fetch('https://api.cloudinary.com/v1_1/dmqvtwlv2/image/upload', { method: 'POST', body: formData });
       const uploadResult = await uploadResponse.json();
-
       if (!uploadResult.secure_url) {
         setIsLoading(false);
-        console.error('❌ Image upload failed:', uploadResult);
         alert('Image upload failed. Please try again.');
         return;
       }
-
       imageUrl = uploadResult.secure_url;
-      console.log(imageUrl);
       setUploadedUrl(imageUrl);
       setImageLinkText(imageUrl);
-      console.log('✅ Image uploaded:', imageUrl);
     } catch (error) {
       setIsLoading(false);
-      console.error('❌ Error uploading image:', error);
       alert('Something went wrong during image upload.');
       return;
     }
-    var making = 0;
-    if (polkiType === 1) {
-      making = 1;
-    }
 
-    // Construct final data object
+    // --- Calculate totalprice/finalPrice as per backend logic ---
+    // 1. Stone/materials
+    let materialTotal = 0;
+    let totalStoneWeightCts = 0;
+    let totalStoneWeightGms = 0;
+    for (const mat of selectedItems) {
+      const quantity = parseFloat(mat.quantity);
+      const price = parseFloat(mat.price || 0);
+      const unit = (mat.unit || 'ct').toLowerCase();
+      const weightInGms = unit === 'gram' || unit === 'gms' ? quantity : quantity * 0.2;
+      const matPrice = quantity * price;
+      materialTotal += matPrice;
+      if (unit === 'ct') totalStoneWeightCts += quantity;
+      totalStoneWeightGms += weightInGms;
+    }
+    // 2. Net weight
+    const gross = parseFloat(grossWeightAmount);
+    const netWeightBeforeWastage = gross - totalStoneWeightGms;
+    // 3. Wastage
+    const wastagePercent = parseFloat(pricesData.find(p => p.docname === 'wastage')?.wastage || 0);
+    const wastage = (wastagePercent / 100) * netWeightBeforeWastage;
+    // 4. Final netWeight = metal part only
+    const netWeightFinal = netWeightBeforeWastage - wastage;
+    // 5. Gold price
+    const goldPrice = parseFloat(pricesData.find(p => p.docname === 'prices')?.[grossWeight] || 0);
+    const goldBase = goldPrice * netWeightFinal;
+    // 6. Making charges
+    let makingCharge = 0;
+    let makingTypeUsed = polkiType;
+    if (category === 'POLKI') {
+      const polki = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Polki Making'] || 0);
+      makingCharge = polki;
+    }
+    else if (category === 'VICTORIAN') {
+      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Victorian Making'] || 0);
+    } else if (category === 'DIAMOND') {
+      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Diamond Making'] || 0);
+    } else {
+      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Gold Making'] || 0);
+    }
+    // 7. Subtotal and GST
+    const subtotal = goldBase + wastage * goldPrice + makingCharge + materialTotal;
+    const gstPercent = 3;
+    const calculatedPrice = parseFloat((subtotal * (1 + gstPercent / 100)).toFixed(1));
+
+    // --- Prepare data for API ---
     const data = {
-      category: category,
-      subcategory: subcategory,
+      category,
+      subcategory,
       goldpurity: grossWeight,
-      netweight: netWeight,
       grossWeight: grossWeightAmount,
-      tier1price: calculateFirstPrice(grossWeight, 3),
-      tier2price: calculateSecondPrice(grossWeight, 3),
-      tier3price: calculateThirdPrice(grossWeight, 3),
+      gst: gstPercent,
       itemsUsed: selectedItems,
-      gst: 3,
+      finalPrice: calculatedPrice,
+      totalprice: calculatedPrice,
+      making: category === 'POLKI' ? polkiType : 0,
+      netweight: parseFloat(netWeightFinal.toFixed(2)),
       imagelink: imageUrl,
       productId: finalProductCode,
-      making: (() => {
-        if (category === 'POLKI') return polkiType; // 0 or 1 for POLKI
-        if (category === 'DIAMONDS') return 0; // Default for diamonds
-        if (category === 'GOLD') return 0; // Default for gold
-        return 0; // Fallback
-      })(),
+      // Optionally include breakdown for debugging
+      pricingBreakdown: {
+        goldCharges: parseFloat(goldBase.toFixed(1)),
+        wastageCharges: parseFloat((wastage * goldPrice).toFixed(1)),
+        makingCharges: parseFloat(makingCharge.toFixed(1)),
+        materialCharges: parseFloat(materialTotal.toFixed(1)),
+        gstPercent,
+        finalPrice: calculatedPrice,
+      },
     };
-
     console.log('🔍 Validated Final Data:', data);
-
     try {
       setIsLoading(true);
-      const response = await fetch(
-        'https://apj-quotation-backend.vercel.app/addItem',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
+      const response = await fetch('https://apj-quotation-backend.vercel.app/addItem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
       const result = await response.json();
       setIsLoading(false);
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
-
+      setTimeout(() => { window.location.reload(); }, 300);
       if (!response.ok) {
-        console.error('❌ API Error:', result);
         alert(`Error: ${result.message}`);
         return;
       }
-
-      // ✅ Success
       alert(`✅ ${result.message}`);
-      console.log('✅ Item saved successfully:', result);
       setActiveTab('home');
     } catch (error) {
-      console.error('❌ Network/Server Error:', error);
-      alert(
-        'Something went wrong while saving the item. Please try again later.'
-      );
+      alert('Something went wrong while saving the item. Please try again later.');
     }
   }
 
+  // Draft handler (same as save, but different endpoint)
   async function handleDraft() {
-    // Frontend Validation
-    if (
-      !category ||
-      !subcategory ||
-      !grossWeight ||
-      !netWeight ||
-      !grossWeightAmount ||
-      // !imageLinkText ||
-      !finalProductCode ||
-      selectedItems.length === 0
-    ) {
-      alert(
-        'All fields must be filled and at least one item must be selected.'
-      );
+    if (!category || !subcategory || !grossWeight || !netWeight || !grossWeightAmount || !finalProductCode || selectedItems.length === 0) {
+      alert('All fields must be filled and at least one item must be selected.');
       return;
     }
-
     setIsLoading(true);
-
-    // 🔄 Step 1: Upload image to Cloudinary
     let imageUrl = '';
     const formData = new FormData();
     formData.append('file', imageFile);
-    formData.append('upload_preset', 'apjimagedatabase'); // your preset
-    formData.append('folder', 'apjimages'); // optional
-
+    formData.append('upload_preset', 'apjimagedatabase');
+    formData.append('folder', 'apjimages');
     try {
-      const uploadResponse = await fetch(
-        'https://api.cloudinary.com/v1_1/dmqvtwlv2/image/upload',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
+      const uploadResponse = await fetch('https://api.cloudinary.com/v1_1/dmqvtwlv2/image/upload', { method: 'POST', body: formData });
       const uploadResult = await uploadResponse.json();
-
       if (!uploadResult.secure_url) {
         setIsLoading(false);
-        console.error('❌ Image upload failed:', uploadResult);
         alert('Image upload failed. Please try again.');
         return;
       }
-
       imageUrl = uploadResult.secure_url;
-      console.log(imageUrl);
       setUploadedUrl(imageUrl);
       setImageLinkText(imageUrl);
-      console.log('✅ Image uploaded:', imageUrl);
     } catch (error) {
       setIsLoading(false);
-      console.error('❌ Error uploading image:', error);
       alert('Something went wrong during image upload.');
       return;
     }
-
-    // Construct final data object
+    // Defensive check for totalprice
+    if (typeof grandTotal !== 'number' || isNaN(grandTotal)) {
+      alert('Calculated total price is invalid. Please check your inputs.');
+      setIsLoading(false);
+      return;
+    }
     const data = {
-      category: category,
-      subcategory: subcategory,
+      category,
+      subcategory,
       goldpurity: grossWeight,
       netweight: netWeight,
       grossWeight: grossWeightAmount,
-      tier1price: calculateFirstPrice(grossWeight, 3),
-      tier2price: calculateSecondPrice(grossWeight, 3),
-      tier3price: calculateThirdPrice(grossWeight, 3),
+      totalprice: grandTotal, // Required by backend
       itemsUsed: selectedItems,
       gst: 3,
       imagelink: imageUrl,
       productId: finalProductCode,
-      making: (() => {
-        if (category === 'POLKI') return polkiType; // 0 or 1 for POLKI
-        if (category === 'DIAMONDS') return 0; // Default for diamonds
-        if (category === 'GOLD') return 0; // Default for gold
-        return 0; // Fallback
-      })(),
+      making: category === 'POLKI' ? polkiType : 0,
     };
-
-    console.log('🔍 Validated Final Data:', data);
-
+    console.log('🔍 Validated Final Data (Draft):', data);
     try {
       setIsLoading(true);
-      const response = await fetch(
-        'https://apj-quotation-backend.vercel.app/addDraft',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
+      const response = await fetch('https://apj-quotation-backend.vercel.app/addDraft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
       const result = await response.json();
       setIsLoading(false);
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
-
+      setTimeout(() => { window.location.reload(); }, 300);
       if (!response.ok) {
-        console.error('❌ API Error:', result);
         alert(`Error: ${result.message}`);
         return;
       }
-
-      // ✅ Success
       alert(`✅ ${result.message}`);
-      console.log('✅ Item saved successfully:', result);
       setActiveTab('home');
     } catch (error) {
-      console.error('❌ Network/Server Error:', error);
-      alert(
-        'Something went wrong while saving the item. Please try again later.'
-      );
+      alert('Something went wrong while saving the item. Please try again later.');
     }
   }
 
+  // --- RENDER ---
   return (
     <div className="additems-container">
       <div className="additemheading">Add Product</div>
@@ -626,10 +353,8 @@ export default function AddItemPage({
           className="additems-input"
         >
           <option value="">Select the Category</option>
-          {pricesData.map((cat) => (
-            <option key={cat.docname} value={cat.docname}>
-              {cat.docname}
-            </option>
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
       </div>
@@ -641,25 +366,11 @@ export default function AddItemPage({
         >
           <option value="">Select the Type of Jewellery</option>
           {subcategories.map((subcat) => (
-            <option key={subcat} value={subcat}>
-              {subcat}
-            </option>
+            <option key={subcat} value={subcat}>{subcat}</option>
           ))}
         </select>
       </div>
-      {/* <div className="additemheadingsmall">Add Image Link</div>
-      <div className="grossweightsection">
-        <input
-          type="text"
-          placeholder="image link"
-          className="grosswtinp imglinkinp"
-          value={imageLinkText}
-          onChange={(e) => setImageLinkText(e.target.value)}
-        />
-      </div> */}
-      <div className="additemheadingsmall">
-        Product Code - {finalProductCode}
-      </div>
+      <div className="additemheadingsmall">Product Code - {finalProductCode}</div>
       <div className="grossweightsection">
         <select
           value={codeprefix}
@@ -668,18 +379,15 @@ export default function AddItemPage({
         >
           <option value="">Select Code Prefix</option>
           {codeprefixlist.map((pre) => (
-            <option key={pre} value={pre}>
-              {pre}
-            </option>
+            <option key={pre} value={pre}>{pre}</option>
           ))}
         </select>
-
         <input
           type="number"
           placeholder="Code"
           className="grosswtinp"
           value={codeSuffix}
-          onChange={(e) => setCodeSuffix(parseFloat(e.target.value))}
+          onChange={(e) => setCodeSuffix(e.target.value)}
         />
       </div>
       <div className="additemheadingsmall">Gross Weight</div>
@@ -690,22 +398,16 @@ export default function AddItemPage({
           className="additems-input"
         >
           <option value="">Select the Purity</option>
-          {pricesData.find((cat) => cat.docname === 'GOLD') &&
-            Object.keys(pricesData.find((cat) => cat.docname === 'GOLD'))
-              .filter((key) => key.endsWith('k'))
-              .map((goldType) => (
-                <option key={goldType} value={goldType}>
-                  {goldType}
-                </option>
-              ))}
+          {purityOptions.map((pur) => (
+            <option key={pur} value={pur}>{pur}</option>
+          ))}
         </select>
-
         <input
           type="number"
           placeholder="Weight"
           className="grosswtinp"
           value={grossWeightAmount}
-          onChange={(e) => setGrossWeightAmount(parseFloat(e.target.value))}
+          onChange={(e) => setGrossWeightAmount(e.target.value)}
         />
         <div className="unit">gms</div>
       </div>
@@ -713,15 +415,31 @@ export default function AddItemPage({
       <div className="itemsused-section">
         {selectedItems.map((item, index) => (
           <div key={index} className="itemsused-row">
-            <div className="item-name">{item.label}</div>
+            <div className="item-name">{item.name}</div>
+            <div className="unit">{item.unit}</div>
             <input
               type="number"
               value={item.quantity}
-              onChange={(e) => updateQuantity(index, e.target.value)}
+              onChange={e => {
+                const updated = [...selectedItems];
+                updated[index].quantity = Number(e.target.value);
+                setSelectedItems(updated);
+              }}
               className="item-qty-input"
+              placeholder="Qty"
             />
-            <span className="unit">ct</span>
-            <button onClick={() => deleteItem(index)} className="delete-btn">
+            <input
+              type="number"
+              value={item.price}
+              onChange={e => {
+                const updated = [...selectedItems];
+                updated[index].price = Number(e.target.value);
+                setSelectedItems(updated);
+              }}
+              className="item-qty-input"
+              placeholder="Price"
+            />
+            <button onClick={() => handleRemoveItemUsed(index)} className="delete-btn">
               <img src="/delete.png" alt="Delete Icon" className="delicon" />
             </button>
             <div className="item-total">
@@ -729,23 +447,37 @@ export default function AddItemPage({
             </div>
           </div>
         ))}
-
         <div className="additem-dropdown-row">
           <select
-            value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
+            value={selectedItemName}
+            onChange={e => {
+              const name = e.target.value;
+              setSelectedItemName(name);
+              const found = itemsused.find(i => i.name === name);
+              setSelectedItemUnit(found ? found.unit : '');
+            }}
             className="additems-input"
           >
-            <option value="">Select field</option>
-            {allOptions.map((opt) => (
-              <option key={opt.label} value={opt.label}>
-                {opt.label} - ₹{opt.price}
-              </option>
+            <option value="">Select item</option>
+            {itemsused.map((opt, idx) => (
+              <option key={opt.name + idx} value={opt.name}>{opt.name} ({opt.unit})</option>
             ))}
           </select>
-          <button onClick={handleAddItem} className="add-btn">
-            Add
-          </button>
+          <input
+            type="number"
+            value={quantity}
+            onChange={e => setQuantity(e.target.value)}
+            className="item-qty-input"
+            placeholder="Qty"
+          />
+          <input
+            type="number"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            className="item-qty-input"
+            placeholder="Price"
+          />
+          <button onClick={handleAddItemUsed} className="add-btn">Add</button>
         </div>
       </div>
       <div className="netwt">
@@ -755,168 +487,53 @@ export default function AddItemPage({
       <div className="netwt">
         <div className="additemheadingsmall2">+ Wastage</div>
         <div className="netwtval">{goldWastage} %</div>
-        <div className="netwtval finprice">
-          {calcWastage(
-            goldWastage,
-            getGoldRate(grossWeight, 0) * netWeight
-          ).toFixed(1)}{' '}
-          ₹
-        </div>
+        <div className="netwtval finprice">{calcWastage(goldWastage, getGoldRate(grossWeight) * netWeight).toFixed(1)} ₹</div>
       </div>
       <div className="netwt">
-        <div className="additemheadingsmall2">
-          x {grossWeight ? grossWeight : '-'} Rate
-        </div>
-        <div className="netwtval">{getGoldRate(grossWeight, 0)} ₹</div>
-        <div className="netwtval finprice">
-          {(getGoldRate(grossWeight, 0) * netWeight).toFixed(1)} ₹
-        </div>
+        <div className="additemheadingsmall2">x {grossWeight ? grossWeight : '-'} Rate</div>
+        <div className="netwtval">{getGoldRate(grossWeight)} ₹</div>
+        <div className="netwtval finprice">{(getGoldRate(grossWeight) * netWeight).toFixed(1)} ₹</div>
       </div>
       <div className="netwt">
         <div className="additemheadingsmall2">+ Making Charges</div>
-        {category == 'POLKI' ? (
-          <>
-            <div className="netwtval">
-              {polkiType === 0
-                ? getMakingCharges(0, category, 0)
-                : getMakingCharges(0, category, 1)}{' '}
-              ₹/gm
-            </div>
-            <div className="netwtval finprice">
-              {(
-                (polkiType === 0
-                  ? getMakingCharges(0, category, 0)
-                  : getMakingCharges(0, category, 1)) * netWeight
-              ).toFixed(1)}{' '}
-              ₹
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="netwtval">
-              {getMakingCharges(0, category, 0)} ₹/gm
-            </div>
-            <div className="netwtval finprice">
-              {(getMakingCharges(0, category, 0) * netWeight).toFixed(1)} ₹
-            </div>
-          </>
-        )}
+        <div className="netwtval">{getMakingCharges()} ₹/gm</div>
+        <div className="netwtval finprice">{(getMakingCharges() * netWeight).toFixed(1)} ₹</div>
       </div>
-      {category == 'POLKI' ? (
+      {/* {category === 'POLKI' && (
         <div className="netwt">
           <select
             name="polki making"
             id="polkimaking"
             className="additems-input polkiselect"
             value={polkiType}
-            onChange={(e) => {
-              console.log(e.target.value);
-              // setMakingT(e.target.value);
-              setPolkiType(Number(e.target.value));
-            }}
+            onChange={e => setPolkiType(Number(e.target.value))}
           >
             <option value={0}>POLKI MC</option>
             <option value={1}>VICTORIAN MC</option>
           </select>
         </div>
-      ) : (
-        <></>
-      )}
+      )} */}
       <div className="netwt">
         <div className="additemheadingsmall">SubTotal</div>
-        {/* <div className="netwtval">{getMakingCharges(0)} ₹/gm</div> */}
-        <div className="netwtval finprice">
-          {(
-            calcWastage(goldWastage, getGoldRate(grossWeight, 0) * netWeight) +
-            getGoldRate(grossWeight, 0) * netWeight +
-            (polkiType === 0 && category === 'POLKI'
-              ? getMakingCharges(0, category, 0)
-              : getMakingCharges(0, category, 1)) *
-              netWeight +
-            total
-          ).toFixed(1)}
-          ₹
-        </div>
+        <div className="netwtval finprice">{subtotal.toFixed(1)} ₹</div>
       </div>
       <div className="netwt">
         <div className="additemheadingsmall2">3% GST</div>
-        {/* <div className="netwtval">{getMakingCharges(0)} ₹/gm</div> */}
-        <div className="netwtval finprice">
-          {calcWastage(
-            3,
-            calcWastage(goldWastage, getGoldRate(grossWeight, 0) * netWeight) +
-              getGoldRate(grossWeight, 0) * netWeight +
-              (polkiType === 0 && category === 'POLKI'
-                ? getMakingCharges(0, category, 0)
-                : getMakingCharges(0, category, 1)) *
-                netWeight +
-              total
-          ).toFixed(1)}
-          ₹
-        </div>
+        <div className="netwtval finprice">{gstAmt.toFixed(1)} ₹</div>
       </div>
       <div className="netwt">
         <div className="additemheadingsmall">Grand Total</div>
-        {/* <div className="netwtval">{getMakingCharges(0)} ₹/gm</div> */}
-        <div className="netwtval finprice">
-          {calculateFirstPrice(grossWeight, 3)}₹
-        </div>
-      </div>{' '}
-      <div className="buttonsectionaddpage">
-        <div
-          className="savebutton"
-          onClick={() => {
-            handleSave();
-          }}
-        >
-          Save Product
-        </div>
-        <div
-          className="savebutton"
-          onClick={() => {
-            handleDraft();
-          }}
-        >
-          Add as Draft
-        </div>
-
-        {/* Hidden file input */}
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-
-        <button
-          disabled={uploadedUrl}
-          className="savebutton"
-          onClick={openFilePicker}
-        >
-          Upload Picture
-        </button>
+        <div className="netwtval finprice">{grandTotal.toFixed(1)} ₹</div>
       </div>
-      {/* Upload button */}
+      <div className="buttonsectionaddpage">
+        <div className="savebutton" onClick={handleSave}>Save Product</div>
+        <div className="savebutton" onClick={handleDraft}>Add as Draft</div>
+        <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+        <button disabled={uploadedUrl} className="savebutton" onClick={openFilePicker}>Upload Picture</button>
+      </div>
       {previewUrl && (
         <div style={{ marginTop: 10 }} className="prevdiv">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            // style={{ width: 200, borderRadius: 8 }}
-            className="previmg"
-          />
-          {/* {imageFile && (
-            <div style={{ marginTop: 10 }} className="imgupload">
-              <button
-                onClick={uploadToCloudinary}
-                disabled={uploading}
-                className="savebutton"
-              >
-                {uploading ? 'Uploading...' : 'Upload Database'}
-              </button>
-            </div>
-          )} */}
+          <img src={previewUrl} alt="Preview" className="previmg" />
         </div>
       )}
     </div>

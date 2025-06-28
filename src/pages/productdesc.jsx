@@ -13,21 +13,10 @@ export default function ProductDesc({
   setActiveTab,
 }) {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [allPrices, setAllPrices] = useState(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const breakdown = item?.pricingBreakdown?.[`tier${priceIndex + 1}`];
-
-  useEffect(() => {
-    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setAllPrices(data.PRICES);
-        }
-      });
-  }, []);
 
   const handleDownload = async () => {
+    console.log(item);
     const blob = await pdf(
       <ProductPDF
         item={item}
@@ -50,14 +39,6 @@ export default function ProductDesc({
   };
 
   if (!item) return <div>No item selected.</div>;
-  const tag = `tier${priceIndex + 1}price`;
-  const price = item[tag];
-
-  const groupedItems = item.itemsUsed?.reduce((acc, material) => {
-    if (!acc[material.category]) acc[material.category] = [];
-    acc[material.category].push(material);
-    return acc;
-  }, {});
 
   async function handleDelete(productId) {
     if (!productId) {
@@ -71,7 +52,6 @@ export default function ProductDesc({
     if (!confirmDelete) return;
 
     try {
-      // Send GET request to delete the item
       const response = await fetch(
         `https://apj-quotation-backend.vercel.app/deleteItem/productId=${encodeURIComponent(
           productId
@@ -89,7 +69,6 @@ export default function ProductDesc({
       console.log('✅ Item deleted:', result);
       alert(`✅ ${result.message}`);
 
-      // Optional: refresh or remove item from UI
       setTimeout(() => window.location.reload(), 300);
     } catch (error) {
       console.error('❌ Network/Server Error:', error);
@@ -98,18 +77,6 @@ export default function ProductDesc({
       );
     }
   }
-
-  // Helper function to get material price from allPrices
-  const getMaterialPrice = (category, label) => {
-    if (!allPrices) return null;
-    const categoryData = allPrices.find((entry) => entry.docname === category);
-    if (!categoryData || !categoryData[label]) return null;
-    const tierPrices = categoryData[label];
-    const selectedPrice = tierPrices[priceIndex];
-    return typeof selectedPrice === 'string'
-      ? parseFloat(selectedPrice)
-      : selectedPrice;
-  };
 
   const formatWeight = (num) => {
     if (isNaN(num)) return '0.0';
@@ -121,6 +88,16 @@ export default function ProductDesc({
     return new Intl.NumberFormat('en-IN', {
       maximumFractionDigits: 0,
     }).format(Number(num));
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   return (
@@ -151,18 +128,21 @@ export default function ProductDesc({
           <img src="/delete.png" alt="" className="backicon" />
         </div>
       </div>
+      
       <img src={item.imagelink} alt="" className="productdescimage" />
+      
       <div className="productdesccategory">
-        <div className="productdescid">Product ID - {item.id}</div>
+        <div className="productdescid">Product ID - {item.productId}</div>
         <div className="productdescpillsection">
           <div className="pill">{item.category}</div>
           <div className="pill">{item.subcategory}</div>
         </div>
       </div>
 
+      {/* Price Section */}
       <div className="productdescgolddata">
-        <div className="golddatatag">Total Price -&nbsp;</div>
-        <div className="golddataval">{formatAmount(price)} ₹</div>
+        <div className="golddatatag">Final Price -&nbsp;</div>
+        <div className="golddataval">{formatAmount(item.finalPrice)} ₹</div>
         <img
           src="/info.png"
           alt=""
@@ -170,73 +150,181 @@ export default function ProductDesc({
           onClick={() => setShowBreakdown(true)}
         />
       </div>
-      <div className="productdescgolddata">
-        <div className="golddatatag">Gold Purity -&nbsp;</div>
-        <div className="golddataval">{item.goldpurity}</div>
-      </div>
-      <div className="productdescgolddata">
-        <div className="golddatatag">Gold Weight -&nbsp;</div>
-        <div className="golddataval">{formatWeight(item.netweight)} gm</div>
-      </div>
-      <div className="productdescgolddata">
-        <div className="golddatatag">Stone Weight -&nbsp;</div>
-        <div className="golddataval">
-          {formatWeight(item.grossWeight - item.netweight)} gm
+
+      {/* Basic Details Section */}
+      <div className="productdesc-section">
+        <div className="productdesc-section-title">Product Details</div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Gold Purity -&nbsp;</div>
+          <div className="golddataval">{item.goldpurity}</div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Net Weight -&nbsp;</div>
+          <div className="golddataval">
+            {(() => {
+              if (!item.itemsUsed || item.itemsUsed.length === 0) {
+                return formatWeight(item.netweight);
+              }
+              
+              // Calculate total stone weight in grams
+              let totalStoneWeightGms = 0;
+              item.itemsUsed.forEach(mat => {
+                const unit = (mat.unit || 'ct').toLowerCase();
+                if (unit === 'ct') {
+                  totalStoneWeightGms += parseFloat(mat.quantity) * 0.2; // Convert carats to grams
+                } else if (unit === 'gms' || unit === 'gram') {
+                  totalStoneWeightGms += parseFloat(mat.quantity); // Use grams directly
+                }
+              });
+              
+              // Calculate net weight: gross weight - stone weight
+              const calculatedNetWeight = parseFloat(item.grossWeight) - totalStoneWeightGms;
+              return formatWeight(calculatedNetWeight);
+            })()} gm
+          </div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Gross Weight -&nbsp;</div>
+          <div className="golddataval">{formatWeight(item.grossWeight)} gm</div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Stone Weight (Carats) -&nbsp;</div>
+          <div className="golddataval">
+            {(() => {
+              if (!item.itemsUsed || item.itemsUsed.length === 0) return '0.00';
+              
+              let totalCts = 0;
+              item.itemsUsed.forEach(mat => {
+                const unit = (mat.unit || 'ct').toLowerCase();
+                if (unit === 'ct') {
+                  totalCts += parseFloat(mat.quantity);
+                } else if (unit === 'gms' || unit === 'gram') {
+                  totalCts += parseFloat(mat.quantity) / 0.2; // Convert grams to carats
+                }
+              });
+              return formatWeight(totalCts);
+            })()} ct
+          </div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Stone Weight (Grams) -&nbsp;</div>
+          <div className="golddataval">
+            {(() => {
+              if (!item.itemsUsed || item.itemsUsed.length === 0) return '0.00';
+              
+              let totalGms = 0;
+              item.itemsUsed.forEach(mat => {
+                const unit = (mat.unit || 'ct').toLowerCase();
+                if (unit === 'ct') {
+                  totalGms += parseFloat(mat.quantity) * 0.2; // Convert carats to grams
+                } else if (unit === 'gms' || unit === 'gram') {
+                  totalGms += parseFloat(mat.quantity); // Use grams directly
+                }
+              });
+              return formatWeight(totalGms);
+            })()} gm
+          </div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Stone Price -&nbsp;</div>
+          <div className="golddataval">
+            {(() => {
+              if (!item.itemsUsed || item.itemsUsed.length === 0) return '0';
+              
+              const totalPrice = item.itemsUsed.reduce((sum, mat) => {
+                return sum + (parseFloat(mat.quantity) * parseFloat(mat.price));
+              }, 0);
+              return formatAmount(totalPrice);
+            })()} ₹
+          </div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">GST -&nbsp;</div>
+          <div className="golddataval">{item.gst}%</div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Making Type -&nbsp;</div>
+          <div className="golddataval">
+            {item.makingTypeUsed === 0 ? 'Standard' : 'Victorian'}
+          </div>
+        </div>
+        <div className="productdescgolddata">
+          <div className="golddatatag">Created Date -&nbsp;</div>
+          <div className="golddataval">{formatDate(item.createdAt)}</div>
         </div>
       </div>
-      <div className="productdescgolddata">
-        <div className="golddatatag">Total Weight -&nbsp;</div>
-        <div className="golddataval">{formatWeight(item.grossWeight)} gm</div>
-      </div>
 
-      <div className="productdesc-groupedlist">
-        {Object.entries(groupedItems).map(([category, items]) => (
-          <div key={category}>
-            <div className="productdesc-category">{category}</div>
-            <ul className="productdesc-itemlist">
-              {items.map((mat, idx) => {
-                const unitPrice = getMaterialPrice(mat.category, mat.label);
-                const total =
-                  unitPrice != null
-                    ? formatAmount(unitPrice * mat.quantity)
-                    : 'N/A';
-                return (
-                  <li className="productdesc-item" key={idx}>
-                    {mat.label} – {mat.quantity} x
-                    {unitPrice != null && (
-                      <>
-                        {' '}
-                        ₹{unitPrice} / unit = ₹{total}
-                      </>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+      {/* Items Used Section */}
+      {item.itemsUsed && item.itemsUsed.length > 0 && (
+        <div className="productdesc-section">
+          <div className="productdesc-section-title">Materials Used</div>
+          <div className="productdesc-itemsused">
+            {item.itemsUsed.map((material, index) => (
+              <div key={index} className="productdesc-material-item">
+                <div className="material-name">{material.name}</div>
+                <div className="material-details">
+                  <span className="material-quantity">{material.quantity}</span>
+                  <span className="material-unit">{material.unit}</span>
+                  <span className="material-price">@ ₹{formatAmount(material.price)}</span>
+                  <span className="material-total">= ₹{formatAmount(material.quantity * material.price)}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Modal */}
+      {/* Price Breakdown Modal */}
       {showBreakdown && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Price Breakdown - Tier {priceIndex + 1}</h2>
-            {breakdown ? (
-              <table className="breakdown-table">
-                <tbody>
-                  {Object.entries(breakdown).map(([key, value]) => (
-                    <tr key={key}>
-                      <td>{key.replace(/([A-Z])/g, ' $1')}</td>
-                      <td>
-                        {key === 'gstPercent'
-                          ? `${value}%`
-                          : `₹${formatAmount(Number(value))}`}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h2>Price Breakdown</h2>
+            {item.pricingBreakdown ? (
+              <div className="breakdown-content">
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Gold Charges:</span>
+                  <span className="breakdown-value">₹{formatAmount(item.pricingBreakdown.goldCharges)}</span>
+                </div>
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Wastage Charges:</span>
+                  <span className="breakdown-value">₹{formatAmount(item.pricingBreakdown.wastageCharges)}</span>
+                </div>
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Making Charges:</span>
+                  <span className="breakdown-value">₹{formatAmount(item.pricingBreakdown.makingCharges)}</span>
+                </div>
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Material Charges:</span>
+                  <span className="breakdown-value">₹{formatAmount(item.pricingBreakdown.materialCharges)}</span>
+                </div>
+                <div className="breakdown-item breakdown-total">
+                  <span className="breakdown-label">Subtotal:</span>
+                  <span className="breakdown-value">
+                    ₹{formatAmount(
+                      item.pricingBreakdown.goldCharges +
+                      item.pricingBreakdown.wastageCharges +
+                      item.pricingBreakdown.makingCharges +
+                      item.pricingBreakdown.materialCharges
+                    )}
+                  </span>
+                </div>
+                <div className="breakdown-item">
+                  <span className="breakdown-label">GST ({item.pricingBreakdown.gstPercent}%):</span>
+                  <span className="breakdown-value">
+                    ₹{formatAmount(
+                      (item.pricingBreakdown.goldCharges +
+                      item.pricingBreakdown.wastageCharges +
+                      item.pricingBreakdown.makingCharges +
+                      item.pricingBreakdown.materialCharges) * 
+                      (item.pricingBreakdown.gstPercent / 100)
+                    )}
+                  </span>
+                </div>
+                <div className="breakdown-item breakdown-final">
+                  <span className="breakdown-label">Final Price:</span>
+                  <span className="breakdown-value">₹{formatAmount(item.pricingBreakdown.finalPrice)}</span>
+                </div>
+              </div>
             ) : (
               <p>No breakdown available.</p>
             )}
@@ -249,6 +337,7 @@ export default function ProductDesc({
           </div>
         </div>
       )}
+      
       {snackbarVisible && (
         <div className="snackbar">PDF downloaded successfully!</div>
       )}

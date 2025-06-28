@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 export default function UpdatePrice({
   isLoading,
@@ -8,68 +8,22 @@ export default function UpdatePrice({
   setPrices,
   setInitialPrices,
 }) {
-  const [editingCategory, setEditingCategory] = useState(null);
+  // Helper to get category by docname
+  const getCategory = (docname) => prices.find((cat) => cat.docname === docname) || {};
+  const getInitialCategory = (docname) => initialPrices.find((cat) => cat.docname === docname) || {};
 
-  const [showPopup, setShowPopup] = useState(false);
-  const [newItem, setNewItem] = useState({
-    category: '',
-    itemName: '',
-    values: ['', '', ''],
-    unit: 'gm',
-  });
-
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       if (data.success) {
-  //         setPrices(data.PRICES);
-  //         setInitialPrices(JSON.parse(JSON.stringify(data.PRICES)));
-  //         console.log('[Initial Load] Prices:', data.PRICES);
-  //       }
-  //       setIsLoading(false);
-  //     })
-  //     .catch((err) => console.error('❌ Error fetching prices:', err))
-  //     .finally(() => setIsLoading(false));
-  // }, []);
-
-  const handleInputChange = (categoryIndex, itemKey, tierIndex, value) => {
-    const updatedPrices = [...prices];
-    const oldValue = updatedPrices[categoryIndex][itemKey][tierIndex];
-    updatedPrices[categoryIndex][itemKey][tierIndex] = value;
+  // Handler for input changes
+  const handleInputChange = (categoryDoc, key, value) => {
+    const updatedPrices = prices.map((cat) => {
+      if (cat.docname !== categoryDoc) return cat;
+      return { ...cat, [key]: value };
+    });
     setPrices(updatedPrices);
-
-    console.log(`[Change Detected]`);
-    console.log(`→ Category: ${updatedPrices[categoryIndex].docname}`);
-    console.log(`→ Item: ${itemKey}`);
-    console.log(`→ Tier: ${tierIndex + 1}`);
-    console.log(`→ Old: ${oldValue} → New: ${value}`);
-    console.log(`→ Updated Entry:`, updatedPrices[categoryIndex][itemKey]);
   };
 
-  const handleDeleteItem = (categoryIndex, itemKey) => {
-    const updatedPrices = [...prices];
-    delete updatedPrices[categoryIndex][itemKey];
-    setPrices(updatedPrices);
-    console.log(`[Item Deleted]`);
-    console.log(`→ Category: ${updatedPrices[categoryIndex].docname}`);
-    console.log(`→ Deleted Item: ${itemKey}`);
-    console.log(`→ Updated Category:`, updatedPrices[categoryIndex]);
-  };
-
-  const handleEditCategory = (docname) => {
-    setEditingCategory((prev) => (prev === docname ? null : docname));
-    console.log(
-      `[Edit Mode] ${docname} is now ${
-        editingCategory === docname ? 'closed' : 'open'
-      }`
-    );
-  };
-
+  // Save changes
   const handleSaveChanges = () => {
     setIsLoading(true);
-    console.log('[Saving Changes] Final prices to send:', prices);
     fetch('https://apj-quotation-backend.vercel.app/updatePrices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,217 +31,107 @@ export default function UpdatePrice({
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log('[Server Response]', data);
         if (data.success) {
           alert('✅ Prices updated successfully.');
           setInitialPrices(JSON.parse(JSON.stringify(prices)));
-          setEditingCategory(null);
-          setIsLoading(false);
         } else {
-          setIsLoading(false);
           alert('❌ Failed to update prices.');
         }
+        setIsLoading(false);
       })
-      .catch((err) => console.error('❌ Error sending updated prices:', err));
+      .catch(() => {
+        alert('❌ Error sending updated prices.');
+        setIsLoading(false);
+      });
   };
 
-  const openPopup = () => {
-    setShowPopup(true);
-    setNewItem({
-      category: '',
-      itemName: '',
-      values: ['', '', ''],
-      unit: 'gm',
-    });
-  };
+  // Making charges keys
+  const makingKeys = [
+    { label: 'Diamond Making', key: 'Diamond Making' },
+    { label: 'Gold Making', key: 'Gold Making' },
+    { label: 'Polki Making', key: 'Polki Making' },
+    { label: 'Victorian Making', key: 'Victorian Making' },
+  ];
+  // Gold prices keys
+  const goldKeys = [
+    { label: '14k', key: '14k' },
+    { label: '18k', key: '18k' },
+    { label: '22k', key: '22k' },
+  ];
 
-  const handleAddNewItem = () => {
-    const { category, itemName, values, unit } = newItem;
-    if (!category || !itemName || values.some((v) => v === '')) {
-      alert('⚠️ Please fill in all fields.');
-      return;
-    }
+  // Wastage key
+  const wastageKey = { label: 'Wastage (%)', key: 'wastage' };
 
-    const updatedPrices = [...prices];
-    const index = updatedPrices.findIndex((cat) => cat.docname === category);
-
-    if (index !== -1) {
-      const keyName = `${itemName.trim()}`;
-      updatedPrices[index][keyName] = values.map(Number);
-      setPrices(updatedPrices);
-      setShowPopup(false);
-
-      console.log('[Item Added]');
-      console.log(`→ Category: ${category}`);
-      console.log(`→ Item: ${keyName}`);
-      console.log(`→ Values:`, values);
-    }
-  };
+  // Get categories
+  const makingCat = getCategory('making');
+  const makingCatInit = getInitialCategory('making');
+  const goldCat = getCategory('prices');
+  const goldCatInit = getInitialCategory('prices');
+  const wastageCat = getCategory('wastage');
+  const wastageCatInit = getInitialCategory('wastage');
 
   return (
     <div className="updateprices-container">
       <div className="headingup">
         <h2 className="updateprices-heading">Update Prices</h2>
-        <button className="additem-btn" onClick={openPopup}>
-          + Add Item
-        </button>
-        <button className="savechanges" onClick={handleSaveChanges}>
+        <button className="savechanges" onClick={handleSaveChanges} disabled={isLoading}>
           Save Changes
         </button>
       </div>
-
-      {showPopup && (
-        <div className="updprices-popup-overlay">
-          <div className="updprices-popup-content">
-            <h3 className="updprices-popup-heading">Add New Item</h3>
-
-            <select
-              className="updprices-popup-select"
-              value={newItem.category}
-              onChange={(e) =>
-                setNewItem({ ...newItem, category: e.target.value })
-              }
-            >
-              <option value="">Select Category</option>
-              {prices.map((cat) => (
-                <option key={cat.docname} value={cat.docname}>
-                  {cat.docname}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              className="updprices-popup-input"
-              placeholder="Item Name"
-              value={newItem.itemName}
-              onChange={(e) =>
-                setNewItem({ ...newItem, itemName: e.target.value })
-              }
-            />
-
-            <div className="updprices-popup-tier-inputs">
-              {newItem.values.map((val, i) => (
-                <input
-                  key={i}
-                  type="number"
-                  placeholder={`Tier ${i + 1}`}
-                  value={val}
-                  className="updprices-popup-tier-input"
-                  onChange={(e) => {
-                    const updated = [...newItem.values];
-                    updated[i] = e.target.value;
-                    setNewItem({ ...newItem, values: updated });
-                  }}
-                />
-              ))}
-            </div>
-
-            <select
-              className="updprices-popup-select"
-              value={newItem.unit}
-              onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-            >
-              <option value="gm">gm</option>
-              <option value="ct">ct</option>
-              <option value="%">%</option>
-            </select>
-
-            <div className="btns">
-              <button
-                className="updprices-popup-addbtn"
-                onClick={handleAddNewItem}
-              >
-                Add
-              </button>
-              <button
-                className="updprices-popup-cancelbtn"
-                onClick={() => setShowPopup(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {isLoading ? (
         <p className="updateprices-loading">Loading...</p>
       ) : (
-        <>
-          <div className="topheaderupd updateprices-items">
-            <div className="updateprices-item-row">
-              <label className="updateprices-item-label l1">Item name</label>
-              <div className="updateprices-input-group">
-                <div className="Q3">Q3 : Owner</div>
-                <div className="Q3">Q2 : RQ</div>
-                <div className="Q3">Q1 : Highest</div>
+        <div className="updateprices-simple-table">
+          {/* Making Charges */}
+          <div className="updateprices-category">
+            <h3>Making Charges</h3>
+            {makingKeys.map(({ label, key }) => (
+              <div className="updateprices-item-row" key={key}>
+                <label className="updateprices-item-label">{label}</label>
+                <input
+                  type="number"
+                  value={makingCat[key] ?? ''}
+                  onChange={(e) => handleInputChange('making', key, Number(e.target.value))}
+                  className={`updateprices-input${
+                    makingCat[key] != makingCatInit[key] ? ' updateprices-changed' : ''
+                  }`}
+                />
               </div>
+            ))}
+          </div>
+          {/* Gold Prices */}
+          <div className="updateprices-category">
+            <h3>Gold Prices</h3>
+            {goldKeys.map(({ label, key }) => (
+              <div className="updateprices-item-row" key={key}>
+                <label className="updateprices-item-label">{label}</label>
+                <input
+                  type="number"
+                  value={goldCat[key] ?? ''}
+                  onChange={(e) => handleInputChange('prices', key, Number(e.target.value))}
+                  className={`updateprices-input${
+                    goldCat[key] != goldCatInit[key] ? ' updateprices-changed' : ''
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
+          {/* Wastage */}
+          <div className="updateprices-category">
+            <h3>Wastage</h3>
+            <div className="updateprices-item-row">
+              <label className="updateprices-item-label">{wastageKey.label}</label>
+              <input
+                type="number"
+                value={wastageCat[wastageKey.key] ?? ''}
+                onChange={(e) => handleInputChange('wastage', wastageKey.key, Number(e.target.value))}
+                className={`updateprices-input${
+                  wastageCat[wastageKey.key] != wastageCatInit[wastageKey.key] ? ' updateprices-changed' : ''
+                }`}
+              />
             </div>
           </div>
-          {prices.map((category, categoryIndex) => (
-            <div key={category.docname} className="updateprices-category">
-              <div className="updateprices-category-header">
-                <h3>{category.docname}</h3>
-                <button
-                  className="updateprices-edit-button"
-                  onClick={() => handleEditCategory(category.docname)}
-                >
-                  {editingCategory === category.docname ? 'Close' : 'Edit'}
-                </button>
-              </div>
-              <div className="updateprices-items">
-                {Object.entries(category).map(([itemKey, values]) => {
-                  if (itemKey === 'docname') return null;
-                  return (
-                    <div key={itemKey} className="updateprices-item-row">
-                      <label className="updateprices-item-label">
-                        {itemKey}
-                      </label>
-                      <div className="updateprices-input-group">
-                        {values.map((value, tierIndex) => {
-                          const isChanged =
-                            initialPrices?.[categoryIndex]?.[itemKey]?.[
-                              tierIndex
-                            ] != value;
-                          return (
-                            <input
-                              key={tierIndex}
-                              type="number"
-                              value={value}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  categoryIndex,
-                                  itemKey,
-                                  tierIndex,
-                                  e.target.value
-                                )
-                              }
-                              className={`updateprices-input ${
-                                isChanged ? 'updateprices-changed' : ''
-                              }`}
-                              disabled={editingCategory !== category.docname}
-                            />
-                          );
-                        })}
-                        {editingCategory === category.docname && (
-                          <button
-                            className="updateprices-delete-button"
-                            onClick={() =>
-                              handleDeleteItem(categoryIndex, itemKey)
-                            }
-                          >
-                            ❌
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </>
+        </div>
       )}
     </div>
   );

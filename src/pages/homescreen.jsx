@@ -125,10 +125,10 @@ export default function Homescreen({
         ))}
       </div>
 
-      {/* Render Filtered Items (optional section) */}
+      {/* Render Filtered Items */}
       <div className="itemsdiv">
         {filteredData.map((item) => (
-          <div className="comp">
+          <div className="comp" key={item.id}>
             <data className="itemcard">
               <div className="first">
                 <img
@@ -147,7 +147,6 @@ export default function Homescreen({
                     <div
                       className="btn"
                       onClick={() => {
-                        console.log(item + 'Edit Item');
                         setedititem(item);
                         setActiveTab('edit');
                       }}
@@ -173,73 +172,29 @@ export default function Homescreen({
                   </div>
                 </div>
                 <div className="medium">Product ID - {item.productId}</div>
-                <div className="bottom">
-                  <div
+                <div className="bottom" style={{ width: '100%' , marginLeft: '12px' }}>
+                  <button
                     className="downloadbutton"
                     onClick={() => {
                       setSelectedItem(item);
-                      setSelectedPriceIndex(0);
                       setActiveTab('productdesc');
                     }}
+                    aria-label={`Download details for ${item.productId}`}
                   >
-                    <div className="dwntag">
-                      Q1 :{' '}
-                      {Number(item.tier1price).toLocaleString('en-IN', {
+                    <span className="dwntag">
+                      Final Price :{' '}
+                      {Number(item.finalPrice).toLocaleString('en-IN', {
                         maximumFractionDigits: 0,
                       })}
-                    </div>
-                    <div className="dwnicon">
+                    </span>
+                    <span className="dwnicon">
                       <img
                         src="/download.png"
                         alt="download icon"
                         className="downicon"
                       />
-                    </div>
-                  </div>
-                  <div
-                    className="downloadbutton"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedPriceIndex(1);
-                      setActiveTab('productdesc');
-                    }}
-                  >
-                    <div className="dwntag">
-                      Q2 :{' '}
-                      {Number(item.tier2price).toLocaleString('en-IN', {
-                        maximumFractionDigits: 0,
-                      })}
-                    </div>
-                    <div className="dwnicon">
-                      <img
-                        src="/download.png"
-                        alt="download icon"
-                        className="downicon"
-                      />
-                    </div>
-                  </div>
-                  <div
-                    className="downloadbutton"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedPriceIndex(2);
-                      setActiveTab('productdesc');
-                    }}
-                  >
-                    <div className="dwntag">
-                      Q3 :{' '}
-                      {Number(item.tier3price).toLocaleString('en-IN', {
-                        maximumFractionDigits: 0,
-                      })}
-                    </div>
-                    <div className="dwnicon">
-                      <img
-                        src="/download.png"
-                        alt="download icon"
-                        className="downicon"
-                      />
-                    </div>
-                  </div>
+                    </span>
+                  </button>
                 </div>
               </div>
             </data>

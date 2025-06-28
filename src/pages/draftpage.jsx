@@ -45,9 +45,7 @@ export default function DraftPage({
       goldpurity: item.goldpurity,
       netweight: item.netweight,
       grossWeight: item.grossWeight,
-      tier1price: item.tier1price,
-      tier2price: item.tier2price,
-      tier3price: item.tier3price,
+      totalprice: item.finalPrice || item.totalprice,
       itemsUsed: item.itemsUsed,
       gst: 3,
       imagelink: item.imagelink,
@@ -263,52 +261,8 @@ export default function DraftPage({
                     }}
                   >
                     <div className="dwntag">
-                      Q1 :{' '}
-                      {Number(item.tier1price).toLocaleString('en-IN', {
-                        maximumFractionDigits: 0,
-                      })}
-                    </div>
-                    <div className="dwnicon">
-                      <img
-                        src="/download.png"
-                        alt="download icon"
-                        className="downicon"
-                      />
-                    </div>
-                  </div>
-                  <div
-                    className="downloadbutton"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedPriceIndex(1);
-                      setActiveTab('productdesc');
-                    }}
-                  >
-                    <div className="dwntag">
-                      Q2 :{' '}
-                      {Number(item.tier2price).toLocaleString('en-IN', {
-                        maximumFractionDigits: 0,
-                      })}
-                    </div>
-                    <div className="dwnicon">
-                      <img
-                        src="/download.png"
-                        alt="download icon"
-                        className="downicon"
-                      />
-                    </div>
-                  </div>
-                  <div
-                    className="downloadbutton"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setSelectedPriceIndex(2);
-                      setActiveTab('productdesc');
-                    }}
-                  >
-                    <div className="dwntag">
-                      Q3 :{' '}
-                      {Number(item.tier3price).toLocaleString('en-IN', {
+                      Price :{' '}
+                      {Number(item.finalPrice || item.totalprice || 0).toLocaleString('en-IN', {
                         maximumFractionDigits: 0,
                       })}
                     </div>
