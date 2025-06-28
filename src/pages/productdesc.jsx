@@ -14,25 +14,115 @@ export default function ProductDesc({
 }) {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showPWAInstall, setShowPWAInstall] = useState(false);
+
+  // Check for PWA install capability
+  useEffect(() => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isMobile && !isStandalone && 'serviceWorker' in navigator) {
+      setShowPWAInstall(true);
+    }
+  }, []);
 
   const handleDownload = async () => {
     console.log(item);
-    const blob = await pdf(
-      <ProductPDF
-        item={item}
-        priceIndex={priceIndex}
-        logoUrl={
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZpUQWDaUTeJ180nuMsWJwVVpLsDm2xVEycw&s'
-        }
-      />
-    ).toBlob();
+    
+    // Check if running as PWA
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Request notification permission if not already granted
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+    
+    try {
+      const blob = await pdf(
+        <ProductPDF
+          item={item}
+          priceIndex={priceIndex}
+          logoUrl={
+            'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZpUQWDaUTeJ180nuMsWJwVVpLsDm2xVEycw&s'
+          }
+        />
+      ).toBlob();
 
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    const filename = `${item.id || 'item'}_${formattedDate}.pdf`;
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      const filename = `${item.id || 'item'}_${formattedDate}.pdf`;
 
-    saveAs(blob, filename);
-    setSnackbarVisible(true);
+      // Create object URL for file opening
+      const objectUrl = URL.createObjectURL(blob);
+      
+      saveAs(blob, filename);
+      setSnackbarVisible(true);
+      
+      // Show enhanced notification for PWA
+      if (Notification.permission === 'granted') {
+        const notification = new Notification('PDF Downloaded Successfully!', {
+          body: isPWA 
+            ? `File "${filename}" saved. Click to open in app.`
+            : `File "${filename}" has been saved. Click to open.`,
+          icon: '/applogo.png',
+          badge: '/applogo.png',
+          tag: 'pdf-download',
+          requireInteraction: false,
+          silent: false,
+          vibrate: [100, 50, 100], // Vibration for mobile
+          data: {
+            filename: filename,
+            objectUrl: objectUrl,
+            timestamp: Date.now()
+          }
+        });
+        
+        // Enhanced notification click handler for PWA
+        notification.onclick = function(event) {
+          // Focus the PWA window
+          window.focus();
+          
+          // Try to open the file
+          try {
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.target = '_blank';
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            console.log('Could not open file directly:', error);
+            // Fallback: show success message
+            if (isPWA) {
+              alert(`✅ PDF "${filename}" downloaded successfully!\n\nYou can find it in your Downloads folder.`);
+            }
+          }
+          
+          notification.close();
+        };
+        
+        // Auto-close notification after 8 seconds (longer for mobile)
+        setTimeout(() => {
+          notification.close();
+          // Clean up object URL
+          URL.revokeObjectURL(objectUrl);
+        }, 8000);
+      }
+      
+      // PWA-specific success message
+      if (isPWA && isMobile) {
+        setTimeout(() => {
+          alert(`📱 PDF "${filename}" downloaded successfully!\n\n✅ File saved to Downloads\n📂 You can access it from your file manager`);
+        }, 1500);
+      }
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+    
     setTimeout(() => {
       setSnackbarVisible(false);
     }, 2000);
