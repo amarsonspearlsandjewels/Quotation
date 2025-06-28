@@ -1,7 +1,7 @@
 import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import ProductPDF from './productPDF';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function ProductDesc({
   item,
@@ -14,29 +14,9 @@ export default function ProductDesc({
 }) {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [showPWAInstall, setShowPWAInstall] = useState(false);
-
-  // Check for PWA install capability
-  useEffect(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    
-    if (isMobile && !isStandalone && 'serviceWorker' in navigator) {
-      setShowPWAInstall(true);
-    }
-  }, []);
 
   const handleDownload = async () => {
     console.log(item);
-    
-    // Check if running as PWA
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Request notification permission if not already granted
-    if (Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
     
     try {
       const blob = await pdf(
@@ -53,79 +33,18 @@ export default function ProductDesc({
       const formattedDate = today.toISOString().split('T')[0];
       const filename = `${item.id || 'item'}_${formattedDate}.pdf`;
 
-      // Create object URL for file opening
-      const objectUrl = URL.createObjectURL(blob);
-      
       saveAs(blob, filename);
+      
+      // Show success toast
       setSnackbarVisible(true);
-      
-      // Show enhanced notification for PWA
-      if (Notification.permission === 'granted') {
-        const notification = new Notification('PDF Downloaded Successfully!', {
-          body: isPWA 
-            ? `File "${filename}" saved. Click to open in app.`
-            : `File "${filename}" has been saved. Click to open.`,
-          icon: '/applogo.png',
-          badge: '/applogo.png',
-          tag: 'pdf-download',
-          requireInteraction: false,
-          silent: false,
-          vibrate: [100, 50, 100], // Vibration for mobile
-          data: {
-            filename: filename,
-            objectUrl: objectUrl,
-            timestamp: Date.now()
-          }
-        });
-        
-        // Enhanced notification click handler for PWA
-        notification.onclick = function(event) {
-          // Focus the PWA window
-          window.focus();
-          
-          // Try to open the file
-          try {
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.target = '_blank';
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } catch (error) {
-            console.log('Could not open file directly:', error);
-            // Fallback: show success message
-            if (isPWA) {
-              alert(`✅ PDF "${filename}" downloaded successfully!\n\nYou can find it in your Downloads folder.`);
-            }
-          }
-          
-          notification.close();
-        };
-        
-        // Auto-close notification after 8 seconds (longer for mobile)
-        setTimeout(() => {
-          notification.close();
-          // Clean up object URL
-          URL.revokeObjectURL(objectUrl);
-        }, 8000);
-      }
-      
-      // PWA-specific success message
-      if (isPWA && isMobile) {
-        setTimeout(() => {
-          alert(`📱 PDF "${filename}" downloaded successfully!\n\n✅ File saved to Downloads\n📂 You can access it from your file manager`);
-        }, 1500);
-      }
+      setTimeout(() => {
+        setSnackbarVisible(false);
+      }, 3000);
       
     } catch (error) {
       console.error('Download failed:', error);
       alert('Failed to generate PDF. Please try again.');
     }
-    
-    setTimeout(() => {
-      setSnackbarVisible(false);
-    }, 2000);
   };
 
   if (!item) return <div>No item selected.</div>;
