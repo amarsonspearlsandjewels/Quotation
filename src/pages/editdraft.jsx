@@ -116,7 +116,9 @@ export default function EditDraftPage({
     for (const item of selectedItems) {
       const quantity = parseFloat(item.quantity);
       const unit = (item.unit || 'ct').toLowerCase();
-      const weightInGms = unit === 'gram' ? quantity : quantity * 0.2;
+      // If unit is gram/gms, use quantity directly as grams
+      // If unit is carat/ct, convert to grams (0.2g per carat)
+      const weightInGms = unit === 'gram' || unit === 'gms' ? quantity : quantity * 0.2;
       totalStoneWeightGms += weightInGms;
     }
     return (grossWeightAmount - totalStoneWeightGms).toFixed(2);
@@ -199,89 +201,91 @@ export default function EditDraftPage({
         return;
       }
     }
-    
-    // Calculate final price using the same logic as additem
+    // --- Calculate totalprice/finalPrice as per additem logic ---
+    // 1. Stone/materials
     let materialTotal = 0;
     let totalStoneWeightCts = 0;
     let totalStoneWeightGms = 0;
-    
     for (const mat of selectedItems) {
       const quantity = parseFloat(mat.quantity);
       const price = parseFloat(mat.price || 0);
       const unit = (mat.unit || 'ct').toLowerCase();
-      const weightInGms = unit === 'gram' ? quantity : quantity * 0.2;
+      const weightInGms = unit === 'gram' || unit === 'gms' ? quantity : quantity * 0.2;
       const matPrice = quantity * price;
       materialTotal += matPrice;
       if (unit === 'ct') totalStoneWeightCts += quantity;
       totalStoneWeightGms += weightInGms;
     }
-    
+    // 2. Net weight
     const gross = parseFloat(grossWeightAmount);
-    const netWeightFinal = gross - totalStoneWeightGms;
-    const goldPrice = parseFloat(pricesData.find(p => p.docname === 'prices')?.[grossWeight] || 0);
-    const goldAmtFinal = goldPrice * netWeightFinal;
+    const netWeightBeforeWastage = gross - totalStoneWeightGms;
+    // 3. Wastage
     const wastagePercent = parseFloat(pricesData.find(p => p.docname === 'wastage')?.wastage || 0);
-    const wastageAmt = (wastagePercent / 100) * goldAmtFinal;
-    
+    const wastage = (wastagePercent / 100) * netWeightBeforeWastage;
+    // 4. Final netWeight = metal part only
+    const netWeightFinal = netWeightBeforeWastage - wastage;
+    // 5. Gold price
+    const goldPrice = parseFloat(pricesData.find(p => p.docname === 'prices')?.[grossWeight] || 0);
+    const goldBase = goldPrice * netWeightFinal;
+    // 6. Making charges
     let makingCharge = 0;
+    let makingTypeUsed = polkiType;
     if (category === 'POLKI') {
       const polki = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Polki Making'] || 0);
-      
       makingCharge = polki;
-    }else if (category === 'VICTORIAN') {
-      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Victorian Making'] || 0);
     }
-     else if (category === 'DIAMOND') {
+    else if (category === 'VICTORIAN') {
+      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Victorian Making'] || 0);
+    } else if (category === 'DIAMOND') {
       makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Diamond Making'] || 0);
     } else {
       makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Gold Making'] || 0);
     }
-    
-    const subtotalFinal = goldAmtFinal + wastageAmt + makingCharge + materialTotal;
+    // 7. Subtotal and GST
+    const subtotal = goldBase + wastage * goldPrice + makingCharge + materialTotal;
     const gstPercent = 3;
-    const calculatedPrice = parseFloat((subtotalFinal * (1 + gstPercent / 100)).toFixed(1));
-    
-    // Prepare data for API - match the exact structure expected by /addeditedDraft
+    const calculatedPrice = parseFloat((subtotal * (1 + gstPercent / 100)).toFixed(1));
+    // --- Prepare data for API ---
     const data = {
       category,
       subcategory,
       goldpurity: grossWeight,
-      netweight: parseFloat(netWeightFinal.toFixed(2)),
       grossWeight: grossWeightAmount,
-      totalprice: calculatedPrice, // This is what the API expects
-      itemsUsed: selectedItems,
       gst: gstPercent,
+      itemsUsed: selectedItems,
+      finalPrice: calculatedPrice,
+      totalprice: calculatedPrice,
+      making: category === 'POLKI' ? polkiType : 0,
+      netweight: parseFloat(netWeightFinal.toFixed(2)),
       imagelink: imageUrl,
       productId: finalProductCode,
-      making: category === 'POLKI' ? polkiType : 0,
+      pricingBreakdown: {
+        goldCharges: parseFloat(goldBase.toFixed(1)),
+        wastageCharges: parseFloat((wastage * goldPrice).toFixed(1)),
+        makingCharges: parseFloat(makingCharge.toFixed(1)),
+        materialCharges: parseFloat(materialTotal.toFixed(1)),
+        gstPercent,
+        finalPrice: calculatedPrice,
+      },
     };
-    
     console.log('🔍 Validated Final Data:', data);
-    
     try {
       const response = await fetch('https://apj-quotation-backend.vercel.app/addeditedDraft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
       const result = await response.json();
-      
+      setIsLoading(false);
+      setTimeout(() => { window.location.reload(); }, 300);
       if (!response.ok) {
-        console.error('❌ Failed to save draft:', result);
         alert(`Error: ${result.message}`);
         return;
       }
-      
-      console.log('✅ Draft saved successfully:', result);
       alert(`✅ ${result.message}`);
       setActiveTab('draft');
-      setTimeout(() => { window.location.reload(); }, 300);
     } catch (error) {
-      console.error('❌ Network/Server Error:', error);
-      alert('Something went wrong while saving the draft. Please try again later.');
-    } finally {
-      setIsLoading(false);
+      alert('Something went wrong while saving the item. Please try again later.');
     }
   }
 
