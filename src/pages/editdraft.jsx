@@ -33,6 +33,11 @@ export default function EditDraftPage({
   const [polkiType, setPolkiType] = useState(0); // default
   const [manualMakingCharges, setManualMakingCharges] = useState(''); // NEW: Manual making charges input
 
+  // Making charges from pricesData (docname: 'making')
+  const makingObj = pricesData.find((p) => p.docname === 'making') || {};
+  // Wastage from pricesData (docname: 'wastage')
+  const wastageObj = pricesData.find((p) => p.docname === 'wastage') || {};
+
   // Pre-fill all fields from item prop
   useEffect(() => {
     if (item) {
@@ -79,11 +84,6 @@ export default function EditDraftPage({
     if (!pricesObj) return [];
     return Object.keys(pricesObj).filter((k) => k.endsWith('k'));
   })();
-
-  // Making charges from pricesData (docname: 'making')
-  const makingObj = pricesData.find((p) => p.docname === 'making') || {};
-  // Wastage from pricesData (docname: 'wastage')
-  const wastageObj = pricesData.find((p) => p.docname === 'wastage') || {};
 
   // Product code prefix (static for each category)
   const codep = {
