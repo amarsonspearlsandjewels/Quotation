@@ -31,6 +31,7 @@ export default function EditDraftPage({
   const [uploading, setUploading] = useState(false);
   const [imageLinkText, setImageLinkText] = useState('');
   const [polkiType, setPolkiType] = useState(0); // default
+  const [manualMakingCharges, setManualMakingCharges] = useState(''); // NEW: Manual making charges input
 
   // Pre-fill all fields from item prop
   useEffect(() => {
@@ -44,8 +45,28 @@ export default function EditDraftPage({
       setPolkiType(item.making || 0);
       setCodePrefix(item.productId?.replace(/\d+$/, '') || '');
       setCodeSuffix(item.productId?.replace(/\D+/, '') || '');
+      
+      // NEW: Handle manual making charges for existing draft products
+      if (item.manualMakingCharges !== undefined) {
+        // If item already has manual making charges, use them
+        setManualMakingCharges(item.manualMakingCharges || '');
+      } else {
+        // For existing draft products without manual making charges, calculate from old system
+        // This helps workers see what the old making charges were
+        let oldMakingCharges = 0;
+        if (item.category === 'GOLD') {
+          oldMakingCharges = (item.netweight || 0) * (makingObj['Gold Making'] || 0);
+        } else if (item.category === 'DIAMOND') {
+          oldMakingCharges = (item.netweight || 0) * (makingObj['Diamond Making'] || 0);
+        } else if (item.category === 'POLKI') {
+          oldMakingCharges = (item.netweight || 0) * (makingObj['Polki Making'] || 0);
+        } else if (item.category === 'VICTORIAN') {
+          oldMakingCharges = (item.netweight || 0) * (makingObj['Victorian Making'] || 0);
+        }
+        setManualMakingCharges(oldMakingCharges.toString());
+      }
     }
-  }, [item]);
+  }, [item, makingObj]);
 
   // Subcategories (static)
   const subcategories = [
@@ -66,10 +87,10 @@ export default function EditDraftPage({
 
   // Product code prefix (static for each category)
   const codep = {
-    DIAMOND: [ 'DNS', 'DC', 'DB', 'DBRL', 'DH', 'DJ', 'DL', 'DNP', 'DRL', 'DT', 'DVAD', 'DNAT', 'EDNS' ],
-    GOLD: [ 'GNS', 'GJ', 'GL', 'GT', 'GRL', 'GB', 'GBRL', 'GC', 'BC', 'CHAMP', 'CHO', 'GUT', 'JB', 'NARL', 'NATH', 'TIKA', 'VAD', 'MANGO', 'MS', 'TM', 'TMH' ],
-    POLKI: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS' ],
-    VICTORIAN: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS' ],
+    DIAMOND: [ 'DNS', 'DC', 'DB', 'DBRL', 'DH', 'DJ', 'DL', 'DNP', 'DRL', 'DT', 'DVAD', 'DNAT', 'EDNS','NAIL' ],
+    GOLD: [ 'GNS', 'GJ', 'GL', 'GT', 'GRL', 'GB', 'GBRL', 'GC', 'BC', 'CHAMP', 'CHO', 'GUT', 'JB', 'NAIL', 'NATH', 'TIKA', 'VAD', 'MANGO', 'MS', 'TM', 'TMH' ],
+    POLKI: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS','NAIL' ],
+    VICTORIAN: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS','NAIL' ],
   };
   const [codeprefixlist, setcodeprefixlist] = useState([]);
   useEffect(() => {
@@ -136,12 +157,18 @@ export default function EditDraftPage({
   };
 
   // Making charges for each category
+  // COMMENTED OUT: Original automatic making charges calculation
+  // const getMakingCharges = () => {
+  //   if (category === 'GOLD') return makingObj['Gold Making'] || 0;
+  //   if (category === 'DIAMOND') return makingObj['Diamond Making'] || 0;
+  //   if (category === 'POLKI') return makingObj['Polki Making'] || 0;
+  //   if (category === 'VICTORIAN') return makingObj['Victorian Making'] || 0;
+  //   return 0;
+  // };
+
+  // NEW: Manual making charges - user enters final amount
   const getMakingCharges = () => {
-    if (category === 'GOLD') return makingObj['Gold Making'] || 0;
-    if (category === 'DIAMOND') return makingObj['Diamond Making'] || 0;
-    if (category === 'POLKI') return makingObj['Polki Making'] || 0;
-    if (category === 'VICTORIAN') return makingObj['Victorian Making'] || 0;
-    return 0;
+    return Number(manualMakingCharges) || 0;
   };
 
   // Calculation logic
@@ -151,7 +178,10 @@ export default function EditDraftPage({
   const goldRate = getGoldRate(grossWeight);
   const goldAmt = Number(netWeight) && Number(goldRate) ? Number(netWeight) * Number(goldRate) : 0;
   const wastageAmt = Number(goldWastage) && goldAmt ? calcWastage(goldWastage, goldAmt) : 0;
-  const makingAmt = Number(getMakingCharges()) && Number(netWeight) ? Number(getMakingCharges()) * Number(netWeight) : 0;
+  // COMMENTED OUT: Original making charges calculation based on weight
+  // const makingAmt = Number(getMakingCharges()) && Number(netWeight) ? Number(getMakingCharges()) * Number(netWeight) : 0;
+  // NEW: Manual making charges - user enters final amount directly
+  const makingAmt = Number(getMakingCharges()) || 0;
   const itemsUsedAmt = selectedItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
 
   // Subtotal: gold + wastage + making + items used
@@ -230,17 +260,20 @@ export default function EditDraftPage({
     // 6. Making charges
     let makingCharge = 0;
     let makingTypeUsed = polkiType;
-    if (category === 'POLKI') {
-      const polki = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Polki Making'] || 0);
-      makingCharge = polki;
-    }
-    else if (category === 'VICTORIAN') {
-      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Victorian Making'] || 0);
-    } else if (category === 'DIAMOND') {
-      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Diamond Making'] || 0);
-    } else {
-      makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Gold Making'] || 0);
-    }
+    // COMMENTED OUT: Original complex making charges calculation
+    // if (category === 'POLKI') {
+    //   const polki = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Polki Making'] || 0);
+    //   makingCharge = polki;
+    // }
+    // else if (category === 'VICTORIAN') {
+    //   makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Victorian Making'] || 0);
+    // } else if (category === 'DIAMOND') {
+    //   makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Diamond Making'] || 0);
+    // } else {
+    //   makingCharge = netWeightFinal * (pricesData.find(p => p.docname === 'making')?.['Gold Making'] || 0);
+    // }
+    // NEW: Manual making charges - user enters final amount directly
+    makingCharge = Number(manualMakingCharges) || 0;
     // 7. Subtotal and GST
     const subtotal = goldBase + wastage * goldPrice + makingCharge + materialTotal;
     const gstPercent = 3;
@@ -259,6 +292,8 @@ export default function EditDraftPage({
       netweight: parseFloat(netWeightFinal.toFixed(2)),
       imagelink: imageUrl,
       productId: finalProductCode,
+      // NEW: Include manual making charges in the data
+      manualMakingCharges: Number(manualMakingCharges) || 0,
       pricingBreakdown: {
         goldCharges: parseFloat(goldBase.toFixed(1)),
         wastageCharges: parseFloat((wastage * goldPrice).toFixed(1)),
@@ -441,10 +476,23 @@ export default function EditDraftPage({
         <div className="netwtval">{getGoldRate(grossWeight)} ₹</div>
         <div className="netwtval finprice">{(getGoldRate(grossWeight) * netWeight).toFixed(1)} ₹</div>
       </div>
-      <div className="netwt">
+      {/* COMMENTED OUT: Original automatic making charges display */}
+      {/* <div className="netwt">
         <div className="additemheadingsmall2">+ Making Charges</div>
         <div className="netwtval">{getMakingCharges()} ₹/gm</div>
         <div className="netwtval finprice">{(getMakingCharges() * netWeight).toFixed(1)} ₹</div>
+      </div> */}
+      {/* NEW: Manual making charges input field */}
+      <div className="netwt">
+        <div className="additemheadingsmall2">+ Making Charges</div>
+        <input
+          type="number"
+          placeholder="Enter Making Charges"
+          className="grosswtinp"
+          value={manualMakingCharges}
+          onChange={(e) => setManualMakingCharges(e.target.value)}
+        />
+        <div className="unit">₹</div>
       </div>
       {/* {category === 'POLKI' && (
         <div className="netwt">

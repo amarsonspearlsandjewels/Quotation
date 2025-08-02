@@ -43,14 +43,17 @@ export default function DraftPage({
       category: item.category,
       subcategory: item.subcategory,
       goldpurity: item.goldpurity,
-      netweight: item.netweight,
+      netweight: parseFloat(item.netweight || 0), // NEW: Ensure proper number format
       grossWeight: item.grossWeight,
       totalprice: item.finalPrice || item.totalprice,
+      finalPrice: item.finalPrice || item.totalprice, // NEW: Add finalPrice field
       itemsUsed: item.itemsUsed,
       gst: 3,
       imagelink: item.imagelink,
       productId: item.productId,
       making: item.making,
+      // NEW: Include manual making charges from draft
+      manualMakingCharges: item.manualMakingCharges || 0,
     };
 
     console.log('🔍 Validated Final Data:', finaldata);
