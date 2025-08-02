@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Page,
   Text,
@@ -19,89 +19,90 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 18,
-    borderBottomWidth: 1.5,
+    alignItems: 'center',
+    marginBottom: 12,
+    borderBottomWidth: 1,
     borderBottomColor: '#d4af37',
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   logo: {
-    width: 60,
-    height: 60,
-    marginRight: 10,
-  },
-  shopInfo: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  shopName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#d4af37',
-    marginBottom: 2,
-    letterSpacing: 1,
-  },
-  shopTagline: {
-    fontSize: 10,
-    color: '#666',
-    marginBottom: 2,
-    fontStyle: 'italic',
-  },
-  contact: {
-    fontSize: 9,
-    color: '#444',
-    marginBottom: 1,
+    width: 50,
+    height: 50,
   },
   billInfo: {
-    minWidth: 120,
     flexDirection: 'column',
     alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    marginLeft: 12,
+    justifyContent: 'center',
   },
   billTitle: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#d4af37',
-    marginBottom: 3,
+    color: '#1a1a1a',
+    marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   billDate: {
     fontSize: 10,
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 0,
   },
   billNumber: {
     fontSize: 9,
     color: '#666',
   },
-  productSection: {
+  goldRatesSection: {
+    marginBottom: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#d4af37',
+    borderRadius: 4,
+    width: '100%',
+  },
+  goldRatesTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#d4af37',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  goldRatesRow: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  goldRateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  goldRateLabel: {
+    fontSize: 9,
+    color: '#1a1a1a',
+    fontWeight: 'bold',
+  },
+  productSection: {
+    flexDirection: 'column',
     alignItems: 'center',
     marginTop: 18,
     marginBottom: 18,
   },
   productImage: {
-    width: 110,
-    height: 90,
-    marginRight: 18,
+    width: 240,
+    height: 180,
+    marginBottom: 12,
     borderRadius: 8,
     backgroundColor: '#f8f8f8',
     objectFit: 'cover',
   },
   productInfo: {
-    flex: 1,
     flexDirection: 'column',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   productCode: {
     fontSize: 12,
     fontWeight: 'bold',
     color: '#1a1a1a',
-    marginBottom: 5,
     letterSpacing: 1,
   },
   productCategory: {
@@ -282,16 +283,24 @@ const formatPrice = (value) => {
   }).format(Math.round(num));
 };
 const formatDate = (dateString) => {
-  if (!dateString) return new Date().toLocaleDateString('en-IN');
+  if (!dateString) {
+    const today = new Date();
+    return today.toLocaleDateString('en-IN', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  }
   const date = new Date(dateString);
   return date.toLocaleDateString('en-IN', { 
     day: '2-digit', 
-    month: 'long', 
+    month: '2-digit', 
     year: 'numeric' 
   });
 };
 
-const ProductPDF = ({ item, logoUrl }) => {
+const ProductPDF = ({ item, logoUrl,goldRates }) => {
+  
   // Use provided fields directly
   const grossWeight = item.grossWeight || 0;
   const netWeight = item.netweight || 0;
@@ -315,7 +324,7 @@ const ProductPDF = ({ item, logoUrl }) => {
           <View style={styles.tableRow} key={idx}>
             <Text style={[styles.tableCell, styles.nameCell]}>{mat.name}</Text>
             <Text style={[styles.tableCell, styles.qtyCell]}>{mat.quantity} {mat.unit}</Text>
-            <Text style={[styles.tableCell, styles.rateCell]}>Rs. {formatPrice(mat.price)}</Text>
+            <Text style={[styles.tableCell, styles.rateCell]}>Rs. {formatPrice(mat.price)}/{mat.unit}</Text>
             <Text style={[styles.tableCell, styles.totalCell]}>Rs. {formatPrice(total)}</Text>
           </View>
         );
@@ -328,28 +337,30 @@ const ProductPDF = ({ item, logoUrl }) => {
         {/* Header */}
         <View style={styles.header}>
           <Image style={styles.logo} src={logoUrl} />
-          <View style={styles.shopInfo}>
-            <Text style={styles.shopName}>AMARSONS PEARLS & JEWELS</Text>
-            <Text style={styles.shopTagline}>Exquisite Jewelry Since 1985</Text>
-            <Text style={styles.contact}>Parklane, Secunderabad - 500003</Text>
-            <Text style={styles.contact}>Tel: 040-2789 4567 | Mob: 9966000001, 9010101087</Text>
-            <Text style={styles.contact}>Email: info@amarsonsjewels.com</Text>
-          </View>
           <View style={styles.billInfo}>
-            <Text style={styles.billTitle}>Jewelry Quotation</Text>
+            <Text style={styles.billTitle}>Estimation</Text>
             <Text style={styles.billDate}>Date: {formatDate(item.createdAt)}</Text>
-            <Text style={styles.billNumber}>Quote #: {item.productId}</Text>
           </View>
         </View>
+
+        {/* Gold Rates Section */}
+        {Object.keys(goldRates).length > 0 && (
+          <View style={styles.goldRatesSection}>
+            <View style={styles.goldRatesRow}>
+              {Object.entries(goldRates).map(([purity, rate]) => (
+                <View style={styles.goldRateItem} key={purity}>
+                  <Text style={styles.goldRateLabel}>{purity} Gold - ₹{rate}/gm</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Product Section */}
         <View style={styles.productSection}>
           {item.imagelink && <Image style={styles.productImage} src={item.imagelink} />}
           <View style={styles.productInfo}>
             <Text style={styles.productCode}>Product Code: {item.productId}</Text>
-            <Text style={styles.productCategory}>Category: {item.category}</Text>
-            <Text style={styles.productCategory}>Type: {item.subcategory}</Text>
-            <Text style={styles.productCategory}>Making Type: {item.makingTypeUsed === 0 ? 'Standard' : 'Victorian'}</Text>
           </View>
         </View>
 
@@ -399,13 +410,9 @@ const ProductPDF = ({ item, logoUrl }) => {
         <View style={styles.pricingSection}>
           <Text style={styles.sectionTitle}>Pricing Breakdown</Text>
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Gold Value ({formatWeight(netWeight)} gm × Rs. {formatPrice(goldRate)}/gm):</Text>
+            <Text style={styles.pricingLabel}>Gold Value ({formatWeight(netWeight)} gm × (Rs. {formatPrice(goldRate)}/gm + {formatWeight(wastagePercent)}%)):</Text>
             <Text style={styles.pricingValue}>Rs. {formatPrice(goldCharges)}</Text>
           </View>
-          {/* <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Wastage Charges ({formatWeight(wastagePercent)}%):</Text>
-            <Text style={styles.pricingValue}>Rs{formatPrice(wastageCharges)}</Text>
-          </View> */}
           {item.itemsUsed && item.itemsUsed.length > 0 && (
             <View style={styles.pricingRow}>
               <Text style={styles.pricingLabel}>Materials & Stones:</Text>
@@ -434,14 +441,6 @@ const ProductPDF = ({ item, logoUrl }) => {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Thank you for choosing Amarsons Pearls & Jewels</Text>
           <Text style={styles.footerText}>Your trusted partner in fine jewelry since 1985</Text>
-          {/* <View style={styles.termsSection}>
-            <Text style={styles.termsTitle}>Terms & Conditions:</Text>
-            <Text style={styles.termsText}>• This quotation is valid for 30 days from the date of issue</Text>
-            <Text style={styles.termsText}>• Prices are subject to change based on gold rate fluctuations</Text>
-            <Text style={styles.termsText}>• All weights are certified and guaranteed</Text>
-            <Text style={styles.termsText}>• 1 year warranty on workmanship</Text>
-            <Text style={styles.termsText}>• Exchange policy available as per store terms</Text>
-          </View> */}
         </View>
       </Page>
     </Document>

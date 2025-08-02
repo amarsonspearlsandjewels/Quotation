@@ -11,6 +11,7 @@ export default function ProductDesc({
   onBack,
   selectedPriceIndex,
   setActiveTab,
+  goldRates
 }) {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -26,6 +27,7 @@ export default function ProductDesc({
           logoUrl={
             'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZpUQWDaUTeJ180nuMsWJwVVpLsDm2xVEycw&s'
           }
+          goldRates={goldRates}
         />
       ).toBlob();
 

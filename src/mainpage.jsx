@@ -124,6 +124,26 @@ export default function Mainpage({
     setSelectedPriceIndex(index);
     setActiveTab('productdesc');
   };
+  const [goldRates, setGoldRates] = useState({});
+
+  useEffect(() => {
+    const fetchGoldRates = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch(
+          'https://apj-quotation-backend.vercel.app/getGoldRates'
+        );
+        const data = await res.json();
+        setGoldRates(data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch gold rates:', err);
+      }
+    };
+
+    fetchGoldRates();
+  }, []);
+
 
   return (
     <>
@@ -160,7 +180,7 @@ export default function Mainpage({
         isLoading={isLoading}
         setIsLoading={setIsLoading}
       />
-      <Carousel isLoading={isLoading} setIsLoading={setIsLoading} />
+      <Carousel isLoading={isLoading} setIsLoading={setIsLoading} goldRates={goldRates} setGoldRates={setGoldRates} />
       <Menupage
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
@@ -247,6 +267,7 @@ export default function Mainpage({
           setActiveTab={setActiveTab}
           itemsused={itemsused}
           setItemsused={setItemsused}
+          goldRates={goldRates}
         />
       )}
       {activeTab === 'draft' && (
