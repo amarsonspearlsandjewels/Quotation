@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
     borderBottomWidth: 1,
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   },
   billInfo: {
     flexDirection: 'column',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   billTitle: {
@@ -283,15 +283,16 @@ const formatPrice = (value) => {
   }).format(Math.round(num));
 };
 const formatDate = (dateString) => {
+  let date;
   if (!dateString) {
-    const today = new Date();
-    return today.toLocaleDateString('en-IN', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    });
+    // Get IST time reliably:
+    const todayIST = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    );
+    date = todayIST;
+  } else {
+    date = new Date(dateString);
   }
-  const date = new Date(dateString);
   return date.toLocaleDateString('en-IN', { 
     day: '2-digit', 
     month: '2-digit', 
@@ -299,7 +300,8 @@ const formatDate = (dateString) => {
   });
 };
 
-const ProductPDF = ({ item, logoUrl,goldRates }) => {
+
+const ProductPDF = ({ item, logoUrl, goldRates, todayDate }) => {
   
   // Use provided fields directly
   const grossWeight = item.grossWeight || 0;
@@ -336,10 +338,9 @@ const ProductPDF = ({ item, logoUrl,goldRates }) => {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Image style={styles.logo} src={logoUrl} />
           <View style={styles.billInfo}>
             <Text style={styles.billTitle}>Estimation</Text>
-            <Text style={styles.billDate}>Date: {formatDate(item.createdAt)}</Text>
+            <Text style={styles.billDate}>Date: {todayDate}</Text>
           </View>
         </View>
 
@@ -349,7 +350,7 @@ const ProductPDF = ({ item, logoUrl,goldRates }) => {
             <View style={styles.goldRatesRow}>
               {Object.entries(goldRates).map(([purity, rate]) => (
                 <View style={styles.goldRateItem} key={purity}>
-                  <Text style={styles.goldRateLabel}>{purity} Gold - ₹{rate}/gm</Text>
+                  <Text style={styles.goldRateLabel}>{purity} Gold - {rate} Rs/gm</Text>
                 </View>
               ))}
             </View>
@@ -437,11 +438,6 @@ const ProductPDF = ({ item, logoUrl,goldRates }) => {
           </View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Thank you for choosing Amarsons Pearls & Jewels</Text>
-          <Text style={styles.footerText}>Your trusted partner in fine jewelry since 1985</Text>
-        </View>
       </Page>
     </Document>
   );

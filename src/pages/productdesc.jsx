@@ -28,6 +28,7 @@ export default function ProductDesc({
             'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZpUQWDaUTeJ180nuMsWJwVVpLsDm2xVEycw&s'
           }
           goldRates={goldRates}
+          todayDate={getTodayDate()}
         />
       ).toBlob();
 
@@ -107,6 +108,16 @@ export default function ProductDesc({
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Get today's date in DD/MM/YYYY format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
     });
   };
