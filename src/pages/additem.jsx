@@ -51,7 +51,7 @@ export default function AddItemPage({
   const codep = {
     DIAMOND: [ 'DNS', 'DC', 'DB', 'DBRL', 'DH', 'DJ', 'DL', 'DNP', 'DRL', 'DT', 'DVAD', 'DNAT', 'EDNS','NAIL' ],
     GOLD: [ 'GNS', 'GJ', 'GL', 'GT', 'GRL', 'GB', 'GBRL', 'GC', 'BC', 'CHAMP', 'CHO', 'GUT', 'JB', 'NAIL', 'NATH', 'TIKA', 'VAD', 'MANGO', 'MS', 'TM', 'TMH' ],
-    POLKI: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS','NAIL' ],
+    POLKI: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS','NAIL','PNST' ],
     VICTORIAN: [ 'PNS', 'PTH', 'PL', 'PCL', 'PB', 'PBRL', 'PJ', 'PR', 'PSL', 'PT', 'VNS','NAIL' ],
   };
   const [codeprefixlist, setcodeprefixlist] = useState([]);
