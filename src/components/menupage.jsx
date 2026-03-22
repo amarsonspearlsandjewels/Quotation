@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 export default function Menupage({
   isMenuOpen,
   setIsMenuOpen,
@@ -18,7 +18,7 @@ export default function Menupage({
   };
 
   return (
-    <div className={`menupage ${isMenuOpen ? 'menuopen' : 'menuclose'}`}>
+    <div className={`menupage ${isMenuOpen ? "menuopen" : "menuclose"}`}>
       <div className="topmenubar">
         <div className="topmenubartag">Menu</div>
         <div className="topmenubarbutton" onClick={() => setIsMenuOpen(false)}>
@@ -27,28 +27,35 @@ export default function Menupage({
       </div>
 
       <div className="menuitems">
-        <div className="menuitem item1" onClick={() => handleMenuClick('home')}>
+        <div className="menuitem item1" onClick={() => handleMenuClick("home")}>
           <img src="/home.png" alt="Home Icon" className="itemicon" />
           <div className="itemtag">Home</div>
-        </div>
-
-        <div className="menuitem item1" onClick={() => handleMenuClick('add')}>
-          <img src="/add.png" alt="Add Icon" className="itemicon" />
-          <div className="itemtag">Add Products</div>
-        </div>
-
-        <div
-          className="menuitem item1"
-          onClick={() => handleMenuClick('price')}
-        >
-          <img src="/updateprice.png" alt="Price Icon" className="itemicon" />
-          <div className="itemtag">Update Prices</div>
         </div>
 
         {isAdmin && (
           <div
             className="menuitem item1"
-            onClick={() => handleMenuClick('users')}
+            onClick={() => handleMenuClick("add")}
+          >
+            <img src="/add.png" alt="Add Icon" className="itemicon" />
+            <div className="itemtag">Add Products</div>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div
+            className="menuitem item1"
+            onClick={() => handleMenuClick("price")}
+          >
+            <img src="/updateprice.png" alt="Price Icon" className="itemicon" />
+            <div className="itemtag">Update Prices</div>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div
+            className="menuitem item1"
+            onClick={() => handleMenuClick("users")}
           >
             <img src="/user.png" alt="User Icon" className="itemicon" />
             <div className="itemtag">Manage Users</div>
@@ -58,19 +65,22 @@ export default function Menupage({
         {isAdmin && (
           <div
             className="menuitem item1"
-            onClick={() => handleMenuClick('draft')}
+            onClick={() => handleMenuClick("draft")}
           >
             <img src="/draft.png" alt="Logout Icon" className="itemicon" />
             <div className="itemtag">Draft Page</div>
           </div>
         )}
-         <div
+
+        {isAdmin && (
+          <div
             className="menuitem item1"
-            onClick={() => handleMenuClick('itemsused')}
+            onClick={() => handleMenuClick("itemsused")}
           >
             <img src="/itemsused.png" alt="Logout Icon" className="itemicon" />
             <div className="itemtag">Items Used Page</div>
           </div>
+        )}
 
         <div className="menuitem item1" onClick={() => handleLogout()}>
           <img src="/exit.png" alt="Logout Icon" className="itemicon" />
@@ -80,7 +90,7 @@ export default function Menupage({
 
       <div className="loggedintag">
         <div className="loggedininfo">
-          Logged In As: {isAdmin ? 'Admin' : 'User'}
+          Logged In As: {isAdmin ? "Admin" : "User"}
         </div>
       </div>
     </div>
