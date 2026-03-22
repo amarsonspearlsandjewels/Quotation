@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import './App.css';
-import Header from './components/header';
-import Carousel from './components/carousel';
-import '/src/assets/styles.css';
-import Bottombar from './components/bottombar';
-import Homescreen from './pages/homescreen';
-import UpdatePrice from './pages/updateprices';
-import Menupage from './components/menupage';
-import AddItemPage from './pages/additem';
-import ManageUsers from './pages/manageusers';
-import ProductDesc from './pages/productdesc';
-import DraftPage from './pages/draftpage';
-import EditItemPage from './pages/edititem';
-import EditDraftPage from './pages/editdraft';
-import ItemsUsed from './pages/itemsused';
+import { useState, useEffect } from "react";
+import "./App.css";
+import Header from "./components/header";
+import Carousel from "./components/carousel";
+import "/src/assets/styles.css";
+import Bottombar from "./components/bottombar";
+import Homescreen from "./pages/homescreen";
+import UpdatePrice from "./pages/updateprices";
+import Menupage from "./components/menupage";
+import AddItemPage from "./pages/additem";
+import ManageUsers from "./pages/manageusers";
+import ProductDesc from "./pages/productdesc";
+import DraftPage from "./pages/draftpage";
+import EditItemPage from "./pages/edititem";
+import EditDraftPage from "./pages/editdraft";
+import ItemsUsed from "./pages/itemsused";
 
 export default function Mainpage({
   username,
@@ -22,7 +22,7 @@ export default function Mainpage({
   isLoading,
   setIsLoading,
 }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedPriceIndex, setSelectedPriceIndex] = useState(null);
@@ -36,11 +36,11 @@ export default function Mainpage({
   const [itemsused, setItemsused] = useState([]);
   // Show popup once per day
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastReminderDate = localStorage.getItem('lastReminderDate');
+    const today = new Date().toISOString().split("T")[0];
+    const lastReminderDate = localStorage.getItem("lastReminderDate");
     if (lastReminderDate !== today) {
       setShowReminder(true);
-      localStorage.setItem('lastReminderDate', today);
+      localStorage.setItem("lastReminderDate", today);
     }
   }, []);
 
@@ -53,16 +53,18 @@ export default function Mainpage({
   const fetchItems = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('https://apj-quotation-backend.vercel.app/getItemsUsed');
+      const response = await fetch(
+        "https://apj-quotation-backend.vercel.app/getItemsUsed",
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setItemsused(data.items);
       } else {
-        console.error('Failed to fetch items:', data.message);
+        console.error("Failed to fetch items:", data.message);
       }
     } catch (error) {
-      console.error('Error fetching items:', error);
+      console.error("Error fetching items:", error);
     } finally {
       setIsLoading(false);
     }
@@ -70,59 +72,77 @@ export default function Mainpage({
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apj-quotation-backend.vercel.app/getAllItems')
+    fetch("https://apj-quotation-backend.vercel.app/getAllItems")
       .then((res) => res.json())
       .then((dataa) => {
         if (dataa.success) {
           setData(dataa.items);
 
-          console.log('Total Prices All Items :', dataa.items);
+          console.log("Total Prices All Items :", dataa.items);
         }
         setIsLoading(false);
       })
-      .catch((err) => console.error('❌ Error fetching prices:', err))
+      .catch((err) => console.error("❌ Error fetching prices:", err))
       .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apj-quotation-backend.vercel.app/getAllDrafts')
+    fetch("https://apj-quotation-backend.vercel.app/getAllDrafts")
       .then((res) => res.json())
       .then((dataa) => {
         if (dataa.success) {
           setDraft(dataa.items);
 
-          console.log('Total Prices All Items :', dataa.items);
+          console.log("Total Prices All Items :", dataa.items);
         }
         setIsLoading(false);
       })
-      .catch((err) => console.error('❌ Error fetching prices:', err))
+      .catch((err) => console.error("❌ Error fetching prices:", err))
       .finally(() => setIsLoading(false));
   }, []);
+
+  // Redirect normal users to home if they access restricted tabs
+  useEffect(() => {
+    if (
+      !isAdmin &&
+      [
+        "add",
+        "price",
+        "edit",
+        "editdraft",
+        "users",
+        "draft",
+        "itemsused",
+      ].includes(activeTab)
+    ) {
+      setActiveTab("home");
+    }
+  }, [activeTab, isAdmin]);
 
   //fetch Update Items api call
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('https://apj-quotation-backend.vercel.app/getAllPrices')
+    fetch("https://apj-quotation-backend.vercel.app/getAllPrices")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
           setPrices(data.PRICES);
           setPricesData(data.PRICES);
           setInitialPrices(JSON.parse(JSON.stringify(data.PRICES)));
-          console.log('[Initial Load] Prices:', data.PRICES);
+          console.log("[Initial Load] Prices:", data.PRICES);
         }
         setIsLoading(false);
       })
-      .catch((err) => console.error('❌ Error fetching prices:', err))
+      .catch((err) => console.error("❌ Error fetching prices:", err))
       .finally(() => setIsLoading(false));
   }, []);
 
   const handlePriceClick = (item, index) => {
     setSelectedItem(item);
     setSelectedPriceIndex(index);
-    setActiveTab('productdesc');
+    setActiveTab("productdesc");
   };
   const [goldRates, setGoldRates] = useState({});
 
@@ -131,19 +151,18 @@ export default function Mainpage({
       try {
         setIsLoading(true);
         const res = await fetch(
-          'https://apj-quotation-backend.vercel.app/getGoldRates'
+          "https://apj-quotation-backend.vercel.app/getGoldRates",
         );
         const data = await res.json();
         setGoldRates(data);
         setIsLoading(false);
       } catch (err) {
-        console.error('Failed to fetch gold rates:', err);
+        console.error("Failed to fetch gold rates:", err);
       }
     };
 
     fetchGoldRates();
   }, []);
-
 
   return (
     <>
@@ -152,15 +171,13 @@ export default function Mainpage({
         <div className="reminder-popup">
           <div className="popup-content">
             <h3>Update Gold Prices</h3>
-            <p>
-            Please update today's Gold rate without 3% GST
-            </p>
+            <p>Please update today's Gold rate without 3% GST</p>
             <div className="popup-buttons">
               <button onClick={() => setShowReminder(false)}>Cancel</button>
               <button
                 onClick={() => {
                   setShowReminder(false);
-                  setActiveTab('price');
+                  setActiveTab("price");
                 }}
               >
                 Go to Update
@@ -180,7 +197,12 @@ export default function Mainpage({
         isLoading={isLoading}
         setIsLoading={setIsLoading}
       />
-      <Carousel isLoading={isLoading} setIsLoading={setIsLoading} goldRates={goldRates} setGoldRates={setGoldRates} />
+      <Carousel
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+        goldRates={goldRates}
+        setGoldRates={setGoldRates}
+      />
       <Menupage
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
@@ -192,7 +214,7 @@ export default function Mainpage({
         setIsLoading={setIsLoading}
       />
 
-      {activeTab === 'home' && (
+      {activeTab === "home" && (
         <Homescreen
           onPriceClick={handlePriceClick}
           isLoading={isLoading}
@@ -207,9 +229,10 @@ export default function Mainpage({
           edititem={edititem}
           itemsused={itemsused}
           setItemsused={setItemsused}
+          isAdmin={isAdmin}
         />
       )}
-      {activeTab === 'price' && (
+      {activeTab === "price" && isAdmin && (
         <UpdatePrice
           isLoading={isLoading}
           setIsLoading={setIsLoading}
@@ -219,7 +242,7 @@ export default function Mainpage({
           setInitialPrices={setInitialPrices}
         />
       )}
-      {activeTab === 'add' && (
+      {activeTab === "add" && isAdmin && (
         <AddItemPage
           isLoading={isLoading}
           setIsLoading={setIsLoading}
@@ -229,7 +252,7 @@ export default function Mainpage({
           setItemsused={setItemsused}
         />
       )}
-      {activeTab === 'edit' && (
+      {activeTab === "edit" && isAdmin && (
         <EditItemPage
           isLoading={isLoading}
           setIsLoading={setIsLoading}
@@ -241,7 +264,7 @@ export default function Mainpage({
           setItemsused={setItemsused}
         />
       )}
-      {activeTab === 'editdraft' && (
+      {activeTab === "editdraft" && isAdmin && (
         <EditDraftPage
           isLoading={isLoading}
           setIsLoading={setIsLoading}
@@ -253,24 +276,25 @@ export default function Mainpage({
           setItemsused={setItemsused}
         />
       )}
-      {activeTab === 'users' && (
+      {activeTab === "users" && isAdmin && (
         <ManageUsers isLoading={isLoading} setIsLoading={setIsLoading} />
       )}
-      {activeTab === 'productdesc' && (
+      {activeTab === "productdesc" && (
         <ProductDesc
           item={selectedItem}
           priceIndex={selectedPriceIndex}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
-          onBack={() => setActiveTab('home')}
+          onBack={() => setActiveTab("home")}
           selectedPriceIndex={selectedPriceIndex}
           setActiveTab={setActiveTab}
           itemsused={itemsused}
           setItemsused={setItemsused}
           goldRates={goldRates}
+          isAdmin={isAdmin}
         />
       )}
-      {activeTab === 'draft' && (
+      {activeTab === "draft" && (
         <DraftPage
           onPriceClick={handlePriceClick}
           isLoading={isLoading}
@@ -287,7 +311,7 @@ export default function Mainpage({
           setItemsused={setItemsused}
         />
       )}
-      {activeTab === 'itemsused' && (
+      {activeTab === "itemsused" && isAdmin && (
         <ItemsUsed
           isLoading={isLoading}
           setIsLoading={setIsLoading}
@@ -298,9 +322,8 @@ export default function Mainpage({
 
       <Bottombar
         activeTab={activeTab}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
         setActiveTab={setActiveTab}
+        isAdmin={isAdmin}
       />
     </>
   );
