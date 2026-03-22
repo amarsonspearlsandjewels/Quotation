@@ -1,23 +1,27 @@
-export default function Bottombar({ activeTab, setActiveTab }) {
+export default function Bottombar({ activeTab, setActiveTab, isAdmin }) {
+  if (!isAdmin) {
+    return null; // Hide bottom bar completely for normal users
+  }
+
   return (
     <div className="bottombar">
       <div
-        className={`tab ${activeTab === 'home' ? 'active' : ''}`}
-        onClick={() => setActiveTab('home')}
+        className={`tab ${activeTab === "home" ? "active" : ""}`}
+        onClick={() => setActiveTab("home")}
       >
         <img src="/home.png" alt="Home" className="tabicon" />
         <div className="tabtag">Home</div>
       </div>
       <div
-        className={`tab ${activeTab === 'price' ? 'active' : ''}`}
-        onClick={() => setActiveTab('price')}
+        className={`tab ${activeTab === "price" ? "active" : ""}`}
+        onClick={() => setActiveTab("price")}
       >
         <img src="/updateprice.png" alt="Update Price" className="tabicon" />
         <div className="tabtag">Update Price</div>
       </div>
       <div
-        className={`tab ${activeTab === 'add' ? 'active' : ''}`}
-        onClick={() => setActiveTab('add')}
+        className={`tab ${activeTab === "add" ? "active" : ""}`}
+        onClick={() => setActiveTab("add")}
       >
         <img src="/add.png" alt="Add" className="tabicon" />
         <div className="tabtag">Add Product</div>
