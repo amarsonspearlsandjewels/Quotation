@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from "react";
 
 export default function Homescreen({
   onPriceClick,
@@ -12,25 +12,26 @@ export default function Homescreen({
   setActiveTab,
   setedititem,
   edititem,
+  isAdmin,
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Items');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Items");
 
   console.log(data);
 
   // Extract unique categories
   const subcategories = Array.from(
-    new Set(data.map((item) => item.subcategory))
+    new Set(data.map((item) => item.subcategory)),
   );
 
   const sortedData = [...data].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
   );
 
   // Filter data by category and search term
   const filteredData = sortedData.filter((item) => {
     const matchesCategory =
-      selectedCategory === 'All Items' || item.subcategory === selectedCategory;
+      selectedCategory === "All Items" || item.subcategory === selectedCategory;
     const matchesSearch = item.productId
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -40,12 +41,12 @@ export default function Homescreen({
 
   async function handleDelete(productId) {
     if (!productId) {
-      alert('❌ Product ID is missing.');
+      alert("❌ Product ID is missing.");
       return;
     }
 
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete item ${productId}?`
+      `Are you sure you want to delete item ${productId}?`,
     );
     if (!confirmDelete) return;
 
@@ -53,27 +54,27 @@ export default function Homescreen({
       // Send GET request to delete the item
       const response = await fetch(
         `https://apj-quotation-backend.vercel.app/deleteItem/productId=${encodeURIComponent(
-          productId
-        )}`
+          productId,
+        )}`,
       );
 
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('❌ Deletion failed:', result);
+        console.error("❌ Deletion failed:", result);
         alert(`Failed to delete item: ${result.message}`);
         return;
       }
 
-      console.log('✅ Item deleted:', result);
+      console.log("✅ Item deleted:", result);
       alert(`✅ ${result.message}`);
 
       // Optional: refresh or remove item from UI
       setTimeout(() => window.location.reload(), 300);
     } catch (error) {
-      console.error('❌ Network/Server Error:', error);
+      console.error("❌ Network/Server Error:", error);
       alert(
-        'Something went wrong while deleting the item. Please try again later.'
+        "Something went wrong while deleting the item. Please try again later.",
       );
     }
   }
@@ -100,9 +101,9 @@ export default function Homescreen({
       <div className="categoriesdiv">
         <div
           className={`category ${
-            selectedCategory === 'All Items' ? 'catactive' : ''
+            selectedCategory === "All Items" ? "catactive" : ""
           }`}
-          onClick={() => setSelectedCategory('All Items')}
+          onClick={() => setSelectedCategory("All Items")}
         >
           <img src="/allitems.png" alt="caticon" className="caticon" />
           <div className="cattag">All Items</div>
@@ -111,7 +112,7 @@ export default function Homescreen({
           <div
             key={cat}
             className={`category ${
-              selectedCategory === cat ? 'catactive' : ''
+              selectedCategory === cat ? "catactive" : ""
             }`}
             onClick={() => setSelectedCategory(cat)}
           >
@@ -143,47 +144,52 @@ export default function Homescreen({
                     <div className="pill">{item.category}</div>
                     <div className="pill">{item.subcategory}</div>
                   </div>
-                  <div className="editbutton">
-                    <div
-                      className="btn"
-                      onClick={() => {
-                        setedititem(item);
-                        setActiveTab('edit');
-                      }}
-                    >
-                      <img
-                        src="/edit.png"
-                        alt="editicon"
-                        className="editicon"
-                      />
+                  {isAdmin && (
+                    <div className="editbutton">
+                      <div
+                        className="btn"
+                        onClick={() => {
+                          setedititem(item);
+                          setActiveTab("edit");
+                        }}
+                      >
+                        <img
+                          src="/edit.png"
+                          alt="editicon"
+                          className="editicon"
+                        />
+                      </div>
+                      <div
+                        className="btn btnred"
+                        onClick={() => {
+                          handleDelete(item.productId);
+                        }}
+                      >
+                        <img
+                          src="/delete.png"
+                          alt="editicon"
+                          className="editicon"
+                        />
+                      </div>
                     </div>
-                    <div
-                      className="btn btnred"
-                      onClick={() => {
-                        handleDelete(item.productId);
-                      }}
-                    >
-                      <img
-                        src="/delete.png"
-                        alt="editicon"
-                        className="editicon"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
                 <div className="medium">Product ID - {item.productId}</div>
-                <div className="bottom" style={{ width: '100%' , marginLeft: '12px' }}>
+                <div
+                  className="bottom"
+                  style={{ width: "100%", marginLeft: "12px" }}
+                >
                   <button
                     className="downloadbutton"
                     onClick={() => {
                       setSelectedItem(item);
-                      setActiveTab('productdesc');
+                      setActiveTab("productdesc");
                     }}
                     aria-label={`Download details for ${item.productId}`}
                   >
                     <span className="dwntag">
-                      Final Price :{' '}
-                      {Number(item.finalPrice).toLocaleString('en-IN', {
+                      Final Price :{" "}
+                      {Number(item.finalPrice).toLocaleString("en-IN", {
                         maximumFractionDigits: 0,
                       })}
                     </span>
